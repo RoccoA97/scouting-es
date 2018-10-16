@@ -23,7 +23,7 @@ FileInputFilter::FileInputFilter( const std::string& file_name_, size_t max_size
 FileInputFilter::~FileInputFilter() {
   fprintf(stderr,"Destroy input filter and delete at 0x%llx \n",(unsigned long long)next_slice);
   Slice::giveAllocated(next_slice);
-  fprintf(stderr,"input operator total %u  read \n",counts);
+  fprintf(stderr,"input operator total %lu  read \n",counts);
   //  fclose( output_file );
   fclose( input_file );
 }
@@ -48,8 +48,7 @@ void* FileInputFilter::operator()(void*) {
   } 
   if( n==0 ) {
     fseek(input_file,0,SEEK_SET);
-    void *a;
-    return this->operator()(a);
+    return this->operator()(nullptr);
   } else {
     // Have more data to process.
     Slice& t = *next_slice;
