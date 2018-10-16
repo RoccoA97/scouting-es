@@ -1,6 +1,7 @@
 #ifndef INPUT_H
 #define INPUT_H
 
+#include <string>
 #include "tbb/pipeline.h"
 #include "tbb/tick_count.h"
 
@@ -8,7 +9,7 @@ class Slice;
 
 class FileInputFilter: public tbb::filter {
  public:
-  FileInputFilter( FILE*, size_t, size_t);
+  FileInputFilter( const std::string&, size_t, size_t);
   ~FileInputFilter();
  private:
   FILE* input_file;

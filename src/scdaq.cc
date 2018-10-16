@@ -37,25 +37,21 @@ bool silent = false;
 
 int run_pipeline( int nthreads, ctrl *control, config *conf)
 {
-
   size_t MAX_BYTES_PER_INPUT_SLICE = 192*conf->getBlocksPerInputBuffer();
-  std::string InputFileName = conf->getInputFile();
-  FILE* input_file = fopen( InputFileName.c_str(), "r" );
-  if( !input_file ) {
-    throw std::invalid_argument( ("Invalid input file name: "+InputFileName).c_str() );
-    return 0;
-  }
   size_t TOTAL_SLICES = conf->getNumInputBuffers();
 
   std::string output_file_base = conf->getOutputFilenameBase();
+  std::string InputFileName = conf->getInputFile();
+
+  // Create file-reading writing stage and add it to the pipeline
+  FileInputFilter file_input_filter( InputFileName, MAX_BYTES_PER_INPUT_SLICE,
+          TOTAL_SLICES);
+
 
   // Create the pipeline
   tbb::pipeline pipeline;
 
-  // Create file-reading writing stage and add it to the pipeline
-  FileInputFilter input_filter( input_file,MAX_BYTES_PER_INPUT_SLICE,
-			    TOTAL_SLICES);
-  pipeline.add_filter( input_filter );
+  pipeline.add_filter( file_input_filter );
 
   // Create reformatter and add it to the pipeline
   StreamProcessor stream_processor(MAX_BYTES_PER_INPUT_SLICE); 
@@ -82,9 +78,6 @@ int run_pipeline( int nthreads, ctrl *control, config *conf)
   // busy; 2-4 works
   pipeline.run( nthreads*4 );
   tbb::tick_count t1 = tbb::tick_count::now();
-
-  //  fclose( output_file );
-  fclose( input_file );
 
   if ( !silent ) printf("time = %g\n", (t1-t0).seconds());
 
