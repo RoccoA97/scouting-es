@@ -94,6 +94,8 @@ int run_pipeline( int nthreads, ctrl *control, config *conf)
 
 
 int main( int argc, char* argv[] ) {
+  (void)(argc);
+  (void)(argv);
     printf("here 0\n");
   try {
     config conf("scdaq.conf");

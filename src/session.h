@@ -40,7 +40,7 @@ private:
   {
     if (!error)
     {
-      printf("handle read\n",data_);
+      printf("handle read\n");
       std::string s=data_;
 
       boost::tokenizer<> tok(s);
@@ -72,7 +72,7 @@ private:
   {
     if (!error)
     {
-      printf("handle write\n",data_);
+      printf("handle write\n");
       socket_.async_read_some(boost::asio::buffer(data_, max_length),
           boost::bind(&session::handle_read, this,
             boost::asio::placeholders::error,
