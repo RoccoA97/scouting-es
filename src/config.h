@@ -10,21 +10,38 @@
 class config{
 public:
   
+  enum class InputType { DMA, FILE };
 
   config(std::string filename);
 
   void print() const;
 
-  std::string getInputFile() const {
-    std::string filename;
-    try{
-      filename = vmap.at("input_file");
-    }catch(const std::out_of_range& oor){
-      
+  InputType getInput() const {
+    const std::string& input = vmap.at("input");
+    if (input == "dma") {
+      return InputType::DMA;
     }
-    return filename;
+    if (input == "file") {
+      return InputType::FILE;
+    }
+    throw std::invalid_argument("Configuration error: Wrong input type '" + input + "'");
   }
-  std::string getElasticUrl() const
+  const std::string& getDmaDevice() const 
+  {
+    return vmap.at("dma_dev");
+  }
+  uint64_t getDmaPacketBufferSize() const {
+    std::string v = vmap.at("dma_packet_buffer_size");
+    return boost::lexical_cast<uint64_t>(v.c_str()); 
+  }
+  uint32_t getNumberOfDmaPacketBuffers() const {
+    std::string v = vmap.at("dma_number_of_packet_buffers");
+    return boost::lexical_cast<uint32_t>(v.c_str()); 
+  }  
+  const std::string& getInputFile() const {
+    return vmap.at("input_file");
+  }
+  const std::string& getElasticUrl() const
   {
     return vmap.at("elastic_url");
   }
@@ -36,7 +53,7 @@ public:
     std::string v = vmap.at("pt_cut");
     return boost::lexical_cast<uint32_t>(v.c_str());
   }
-  std::string getOutputFilenameBase() const 
+  const std::string& getOutputFilenameBase() const 
   {
     return vmap.at("output_filename_base");
   }

@@ -15,7 +15,7 @@ FileInputFilter::FileInputFilter( const std::string& file_name_, size_t max_size
 { 
   input_file = fopen( file_name_.c_str(), "r" );
   if ( !input_file ) {
-    throw std::invalid_argument( ("Invalid input file name: " + file_name_).c_str() );
+    throw std::invalid_argument( "Invalid input file name: " + file_name_ );
   }
   fprintf(stderr,"Created input filter and allocated at 0x%llx \n",(unsigned long long)next_slice);
 }
