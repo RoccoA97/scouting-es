@@ -1,5 +1,5 @@
-#ifndef FILE_INPUT_H
-#define FILE_INPUT_H
+#ifndef DMA_INPUT_H
+#define DMA_INPUT_H
 
 #include <memory>
 #include <string>
@@ -8,12 +8,12 @@
 
 class Slice;
 
-class FileInputFilter: public tbb::filter {
+class DmaInputFilter: public tbb::filter {
  public:
-  FileInputFilter( const std::string&, size_t, size_t);
-  ~FileInputFilter();
+  DmaInputFilter( const std::string&, size_t, size_t);
+  ~DmaInputFilter();
  private:
-  FILE* input_file;
+  int dma_fd;
   Slice* next_slice;
   void* operator()(void*) /*override*/;
   uint64_t counts;
@@ -22,6 +22,6 @@ class FileInputFilter: public tbb::filter {
   uint64_t last_count;
 };
 
-typedef std::shared_ptr<FileInputFilter> FileInputFilterPtr;
+typedef std::shared_ptr<DmaInputFilter> DmaInputFilterPtr;
 
 #endif

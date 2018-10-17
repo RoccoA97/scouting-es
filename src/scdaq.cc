@@ -16,6 +16,7 @@
 
 
 
+#include "dma_input.h"
 #include "file_input.h"
 #include "processor.h"
 #include "elastico.h"
@@ -37,25 +38,40 @@ bool silent = false;
 
 int run_pipeline( int nthreads, ctrl *control, config *conf)
 {
+  config::InputType input = conf->getInput();
 
-  size_t MAX_BYTES_PER_INPUT_SLICE = 192*conf->getBlocksPerInputBuffer();
-  std::string InputFileName = conf->getInputFile();
-  FILE* input_file = fopen( InputFileName.c_str(), "r" );
-  if( !input_file ) {
-    throw std::invalid_argument( ("Invalid input file name: "+InputFileName).c_str() );
-    return 0;
-  }
-  size_t TOTAL_SLICES = conf->getNumInputBuffers();
+  size_t MAX_BYTES_PER_INPUT_SLICE = 0;
+  size_t TOTAL_SLICES = 0;
 
-  std::string output_file_base = conf->getOutputFilenameBase();
+  // Create empty input reader, will assing later when we know what is the data source 
+  std::shared_ptr<tbb::filter> input_filter;
 
   // Create the pipeline
   tbb::pipeline pipeline;
 
-  // Create file-reading writing stage and add it to the pipeline
-  FileInputFilter input_filter( input_file,MAX_BYTES_PER_INPUT_SLICE,
-			    TOTAL_SLICES);
-  pipeline.add_filter( input_filter );
+  if (input == config::InputType::FILE) {
+     // Prepare reading from FILE
+      MAX_BYTES_PER_INPUT_SLICE = 192*conf->getBlocksPerInputBuffer();
+      TOTAL_SLICES = conf->getNumInputBuffers();
+      
+      // Create file-reading writing stage and add it to the pipeline
+      input_filter = std::make_shared<FileInputFilter>( conf->getInputFile(), MAX_BYTES_PER_INPUT_SLICE, TOTAL_SLICES );
+
+  } else if (input == config::InputType::DMA) {
+      // Prepare reading from DMA
+      MAX_BYTES_PER_INPUT_SLICE = conf->getDmaPacketBufferSize();
+      TOTAL_SLICES = conf->getNumberOfDmaPacketBuffers();
+
+      // Create DMA reader
+      input_filter = std::make_shared<DmaInputFilter>( conf->getDmaDevice(), MAX_BYTES_PER_INPUT_SLICE, TOTAL_SLICES );
+  }
+
+  // Add input reader to a pipeline
+  pipeline.add_filter( *input_filter );
+
+  std::cout << "Configuration translated into:\n";;
+  std::cout << "  MAX_BYTES_PER_INPUT_SLICE: " << MAX_BYTES_PER_INPUT_SLICE << '\n';
+  std::cout << "  TOTAL_SLICES: " << TOTAL_SLICES << '\n';
 
   // Create reformatter and add it to the pipeline
   StreamProcessor stream_processor(MAX_BYTES_PER_INPUT_SLICE); 
@@ -72,6 +88,8 @@ int run_pipeline( int nthreads, ctrl *control, config *conf)
     pipeline.add_filter(elastic_processor);
   }
 
+  std::string output_file_base = conf->getOutputFilenameBase();
+
   // Create file-writing stage and add it to the pipeline
   OutputStream output_stream( output_file_base.c_str() , control);
   pipeline.add_filter( output_stream );
@@ -83,9 +101,6 @@ int run_pipeline( int nthreads, ctrl *control, config *conf)
   pipeline.run( nthreads*4 );
   tbb::tick_count t1 = tbb::tick_count::now();
 
-  //  fclose( output_file );
-  fclose( input_file );
-
   if ( !silent ) printf("time = %g\n", (t1-t0).seconds());
 
   return 1;
@@ -94,6 +109,8 @@ int run_pipeline( int nthreads, ctrl *control, config *conf)
 
 
 int main( int argc, char* argv[] ) {
+  (void)(argc);
+  (void)(argv);
     printf("here 0\n");
   try {
     config conf("scdaq.conf");

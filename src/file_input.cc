@@ -3,24 +3,29 @@
 #include "slice.h"
 #include "utility.h"
 
-FileInputFilter::FileInputFilter( FILE* input_file_ , size_t max_size_, 
+FileInputFilter::FileInputFilter( const std::string& file_name_, size_t max_size_, 
 			  size_t nslices_) : 
 
   filter(serial_in_order),
-  input_file(input_file_),
   next_slice(Slice::preAllocate( max_size_,nslices_) ),
   counts(0),
   ncalls(0),
   lastStartTime(tbb::tick_count::now()),
   last_count(0)
 { 
+  input_file = fopen( file_name_.c_str(), "r" );
+  if ( !input_file ) {
+    throw std::invalid_argument( "Invalid input file name: " + file_name_ );
+  }
   fprintf(stderr,"Created input filter and allocated at 0x%llx \n",(unsigned long long)next_slice);
 }
 
 FileInputFilter::~FileInputFilter() {
   fprintf(stderr,"Destroy input filter and delete at 0x%llx \n",(unsigned long long)next_slice);
   Slice::giveAllocated(next_slice);
-  fprintf(stderr,"input operator total %u  read \n",counts);
+  fprintf(stderr,"input operator total %lu  read \n",counts);
+  //  fclose( output_file );
+  fclose( input_file );
 }
 
 void* FileInputFilter::operator()(void*) {
@@ -43,8 +48,7 @@ void* FileInputFilter::operator()(void*) {
   } 
   if( n==0 ) {
     fseek(input_file,0,SEEK_SET);
-    void *a;
-    return this->operator()(a);
+    return this->operator()(nullptr);
   } else {
     // Have more data to process.
     Slice& t = *next_slice;
