@@ -15,7 +15,7 @@
 #include <boost/thread.hpp>
 
 
-
+#include "wzdma_input.h"
 #include "dma_input.h"
 #include "file_input.h"
 #include "processor.h"
@@ -64,6 +64,17 @@ int run_pipeline( int nthreads, ctrl *control, config *conf)
 
       // Create DMA reader
       input_filter = std::make_shared<DmaInputFilter>( conf->getDmaDevice(), MAX_BYTES_PER_INPUT_SLICE, TOTAL_SLICES );
+
+  } else if (input == config::InputType::WZDMA ) {
+      // Prepare reading from WZ DMA
+      MAX_BYTES_PER_INPUT_SLICE = conf->getDmaPacketBufferSize();
+      TOTAL_SLICES = conf->getNumberOfDmaPacketBuffers();
+
+      // Create WZ DMA reader
+      input_filter = std::make_shared<WZDmaInputFilter>( MAX_BYTES_PER_INPUT_SLICE, TOTAL_SLICES );
+
+  } else {
+    throw std::invalid_argument("Configuration error: Unknown input type was specified");
   }
 
   // Add input reader to a pipeline
@@ -74,17 +85,19 @@ int run_pipeline( int nthreads, ctrl *control, config *conf)
   std::cout << "  TOTAL_SLICES: " << TOTAL_SLICES << '\n';
 
   // Create reformatter and add it to the pipeline
-  StreamProcessor stream_processor(MAX_BYTES_PER_INPUT_SLICE); 
-  pipeline.add_filter( stream_processor );
+  if ( conf->getEnableStreamProcessor() ) {
+    StreamProcessor stream_processor(MAX_BYTES_PER_INPUT_SLICE); 
+    pipeline.add_filter( stream_processor );
+  }
 
   // Create elastic populator (if requested)
-  std::string url = conf->getElasticUrl();
-  if(url.compare(0,2,"no")!=0){
+  if ( conf->getEnableElasticProcessor() ) {
+    std::string url = conf->getElasticUrl();
     ElasticProcessor elastic_processor(MAX_BYTES_PER_INPUT_SLICE,
-				       control,
-				       url,
-				       conf->getPtCut(),
-				       conf->getQualCut());
+              control,
+              url,
+              conf->getPtCut(),
+              conf->getQualCut());
     pipeline.add_filter(elastic_processor);
   }
 

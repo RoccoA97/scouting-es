@@ -10,7 +10,7 @@
 class config{
 public:
   
-  enum class InputType { DMA, FILE };
+  enum class InputType { WZDMA, DMA, FILE };
 
   config(std::string filename);
 
@@ -18,6 +18,9 @@ public:
 
   InputType getInput() const {
     const std::string& input = vmap.at("input");
+    if (input == "wzdma") {
+      return InputType::WZDMA;
+    }
     if (input == "dma") {
       return InputType::DMA;
     }
@@ -77,7 +80,13 @@ public:
     std::string v = vmap.at("port");
     return boost::lexical_cast<short>(v.c_str());
   }
-  
+  bool getEnableStreamProcessor() const {
+    return (true ? vmap.at("enable_stream_processor") == "yes" : false);
+  }
+  bool getEnableElasticProcessor() const {
+    return (true ? vmap.at("enable_stream_processor") == "yes" : false);
+  }
+
 private:
   
   std::map<std::string,std::string> vmap;
