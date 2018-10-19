@@ -1,3 +1,5 @@
+#include <system_error>
+
 #include "output.h"
 #include "slice.h"
 
@@ -36,10 +38,32 @@ void* OutputStream::operator()( void* item ) {
 }
 
 void OutputStream::open_next_file(){
-  if(current_file){fclose(current_file); current_file_size=0; file_count += 1;}
-  char run_order_stem[18];
-  sprintf(run_order_stem,"_%06d_%06d.dat",control->run_number,file_count);
+  if (current_file) {
+    fclose(current_file);
+
+    // Move the file, so it can be processes by file movers daemon
+    char source_file_name[256];
+    char target_file_name[256];
+    // TODO: Check if the destination directory exists
+    sprintf(source_file_name,"%s/in_progress/scout_%06d_%06d.dat",my_output_file_base.c_str(),control->run_number,file_count);
+    sprintf(target_file_name,"%s/scout_%06d_%06d.dat",my_output_file_base.c_str(),control->run_number,file_count);
+
+    fprintf(stderr, "rename: %s to %s\n", source_file_name, target_file_name);
+    if ( rename(source_file_name, target_file_name) < 0 ) {
+      perror("File rename failed");
+    }
+
+    current_file_size=0; 
+    file_count += 1;
+  }
+
+  char run_order_stem[256];
+  // TODO: Check if the destination directory exists
+  sprintf(run_order_stem,"/in_progress/scout_%06d_%06d.dat",control->run_number,file_count);
   std::string file_end(run_order_stem);
   std::string filename = my_output_file_base+file_end;
   current_file = fopen( filename.c_str(), "w" );
+  if (current_file == NULL) {
+    throw std::system_error(errno, std::system_category(), "File open error");
+  }
 }

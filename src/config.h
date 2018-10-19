@@ -87,7 +87,7 @@ public:
     return (true ? vmap.at("enable_stream_processor") == "yes" : false);
   }
   bool getEnableElasticProcessor() const {
-    return (true ? vmap.at("enable_stream_processor") == "yes" : false);
+    return (true ? vmap.at("enable_elastic_processor") == "yes" : false);
   }
 
 private:
