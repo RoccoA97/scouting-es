@@ -17,6 +17,7 @@
 
 #include "wzdma_input.h"
 #include "dma_input.h"
+#include "file_dma_input.h"
 #include "file_input.h"
 #include "processor.h"
 #include "elastico.h"
@@ -64,6 +65,14 @@ int run_pipeline( int nthreads, ctrl *control, config *conf)
 
       // Create DMA reader
       input_filter = std::make_shared<DmaInputFilter>( conf->getDmaDevice(), MAX_BYTES_PER_INPUT_SLICE, TOTAL_SLICES );
+
+  } else if (input == config::InputType::FILEDMA) {
+      // Prepare reading from FILE and simulating DMA
+      MAX_BYTES_PER_INPUT_SLICE = conf->getDmaPacketBufferSize();
+      TOTAL_SLICES = conf->getNumberOfDmaPacketBuffers();
+
+      // Create DMA reader
+      input_filter = std::make_shared<FileDmaInputFilter>( conf->getInputFile(), MAX_BYTES_PER_INPUT_SLICE, TOTAL_SLICES );
 
   } else if (input == config::InputType::WZDMA ) {
       // Prepare reading from WZ DMA
