@@ -12,22 +12,24 @@
 TARGET = scdaq
 
 # source files
-SOURCES = config.cc  dma_input.cc elastico.cc  file_input.cc  input.cc  output.cc  processor.cc  scdaq.cc  session.cc  slice.cc
+SOURCES = config.cc dma_input.cc elastico.cc  file_input.cc  input.cc  output.cc  processor.cc  scdaq.cc  session.cc  slice.cc wzdma_input.cc
+C_SOURCES = wz_dma.c
 
 # work out names of object files from sources
 OBJECTS = $(SOURCES:.cc=.o)
+OBJECTS += $(C_SOURCES:.c=.o)
 
 # compiler flags (do not include -c here as it's dealt with by the
 # appropriate rules; CXXFLAGS gets passed as part of command
 # invocation for both compilation (where -c is needed) and linking
 # (where it's not.)
-#CXXFLAGS = -std=c++11 -Wall -Wextra -O0 -g -rdynamic
-CXXFLAGS = -std=c++11 -Wall -Wextra 
+CXXFLAGS = -std=c++11 -Wall -Wextra -O0 -g -rdynamic
+#CXXFLAGS = -std=c++11 -Wall -Wextra 
 
+CFLAGS = $(CXXFLAGS)
 LDFLAGS = -ltbb -lboost_thread -lcurl
 
-CPPFLAGS = -I.
-
+CPPFLAGS = -I. -Iwzdma
 
 # default target (to build all)
 all: ${TARGET}
@@ -55,13 +57,16 @@ ${TARGET}: ${OBJECTS}
 
 #test2.o : product.h test2.h
 
-scdaq.o:		file_input.h processor.h elastico.h output.h format.h server.h controls.h config.h
-config.o:		config.h
+scdaq.o:	file_input.h processor.h elastico.h output.h format.h server.h controls.h config.h
+config.o:	config.h
 dma_input.o:	dma_input.h slice.h
-elastico.o:		elastico.h format.h slice.h controls.h
+elastico.o:	elastico.h format.h slice.h controls.h
 file_input.o:	file_input.h slice.h utility.h
-input.o:		input.h slice.h
-output.o:		output.h slice.h
+input.o:	input.h slice.h
+output.o:	output.h slice.h
 processor.o:	processor.h slice.h format.h
-session.o:		session.h
-slice.o: 		slice.h
+session.o:	session.h
+slice.o: 	slice.h
+wzdma_input.o:	wzdma_input.h slice.h
+wz_dma.o:	wz_dma.h
+
