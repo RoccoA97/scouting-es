@@ -66,4 +66,11 @@ struct gmt_scales{
   static constexpr float eta_scale = 0.0870/8; //9th MS bit is sign
   static constexpr float phi_range = M_PI;
 };
+
+struct constants{
+  static constexpr uint32_t deadbeef = 0xdeadbeef;
+  static constexpr uint32_t orbit_trailer_size = 32;
+};
+
+
 #endif
