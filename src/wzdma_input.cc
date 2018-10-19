@@ -144,13 +144,19 @@ void* WZDmaInputFilter::operator()(void*) {
       throw std::system_error(errno, std::system_category(), "Cannot complete WZ DMA read");
 	}
 
-  // Calculate DMA bandwidth
-  tbb::tick_count now = tbb::tick_count::now();
-  double time_diff =  (double)((now - lastStartTime).seconds());
-  lastStartTime = now;
-  double bwd = bytes_read / ( time_diff * 1024.0 * 1024.0 );
+  counts += bytes_read;
 
-  std::cout << "Read returned: " << bytes_read << ", DMA bandwidth " << bwd << "MBytes/sec\n";
+  // TODO: Make this configurable
+  if (ncalls % 5000 == 0) {
+    // Calculate DMA bandwidth
+    tbb::tick_count now = tbb::tick_count::now();
+    double time_diff =  (double)((now - lastStartTime).seconds());
+    lastStartTime = now;
+    double bwd = counts / ( time_diff * 1024.0 * 1024.0 );
+
+    std::cout << "#" << ncalls << ": Read(s) returned: " << counts << ", DMA bandwidth " << bwd << "MBytes/sec\n";
+    counts = 0;
+  }
 
   // Have more data to process.
   Slice* this_slice = next_slice;
