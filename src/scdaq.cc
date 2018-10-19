@@ -85,19 +85,21 @@ int run_pipeline( int nthreads, ctrl *control, config *conf)
   std::cout << "  TOTAL_SLICES: " << TOTAL_SLICES << '\n';
 
   // Create reformatter and add it to the pipeline
+  // TODO: Created here so we are not subject of scoping, fix later...
+  StreamProcessor stream_processor(MAX_BYTES_PER_INPUT_SLICE); 
   if ( conf->getEnableStreamProcessor() ) {
-    StreamProcessor stream_processor(MAX_BYTES_PER_INPUT_SLICE); 
     pipeline.add_filter( stream_processor );
   }
 
   // Create elastic populator (if requested)
-  if ( conf->getEnableElasticProcessor() ) {
-    std::string url = conf->getElasticUrl();
-    ElasticProcessor elastic_processor(MAX_BYTES_PER_INPUT_SLICE,
+  std::string url = conf->getElasticUrl();
+  // TODO: Created here so we are not subject of scoping, fix later...
+  ElasticProcessor elastic_processor(MAX_BYTES_PER_INPUT_SLICE,
               control,
               url,
               conf->getPtCut(),
               conf->getQualCut());
+  if ( conf->getEnableElasticProcessor() ) {
     pipeline.add_filter(elastic_processor);
   }
 
