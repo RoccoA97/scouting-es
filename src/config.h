@@ -44,6 +44,10 @@ public:
     std::string v = vmap.at("dma_number_of_packet_buffers");
     return boost::lexical_cast<uint32_t>(v.c_str()); 
   }  
+  uint32_t getPacketsPerReport() const {
+    std::string v = vmap.at("packets_per_report");
+    return boost::lexical_cast<uint32_t>(v.c_str()); 
+  } 
   const std::string& getInputFile() const {
     return vmap.at("input_file");
   }

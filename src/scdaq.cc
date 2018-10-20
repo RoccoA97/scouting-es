@@ -80,7 +80,7 @@ int run_pipeline( int nthreads, ctrl *control, config *conf)
       TOTAL_SLICES = conf->getNumberOfDmaPacketBuffers();
 
       // Create WZ DMA reader
-      input_filter = std::make_shared<WZDmaInputFilter>( MAX_BYTES_PER_INPUT_SLICE, TOTAL_SLICES );
+      input_filter = std::make_shared<WZDmaInputFilter>( MAX_BYTES_PER_INPUT_SLICE, TOTAL_SLICES, control );
 
   } else {
     throw std::invalid_argument("Configuration error: Unknown input type was specified");
@@ -147,6 +147,7 @@ int main( int argc, char* argv[] ) {
     control.running = false;
     control.run_number = 0;
     control.max_file_size = conf.getOutputMaxFileSize();//in Bytes
+    control.packets_per_report = conf.getPacketsPerReport();
 
     boost::asio::io_service io_service;
     server s(io_service, conf.getPortNumber(), &control);

@@ -3,7 +3,6 @@
 #include <cerrno>
 #include <system_error>
 #include <iostream>
-#include <sstream>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -13,7 +12,7 @@
 #include "slice.h"
 
 
-WZDmaInputFilter::WZDmaInputFilter(size_t packet_buffer_size_, size_t number_of_packet_buffers_) : 
+WZDmaInputFilter::WZDmaInputFilter(size_t packet_buffer_size_, size_t number_of_packet_buffers_, ctrl* control_) : 
 
   filter(serial_in_order),
   next_slice(Slice::preAllocate( packet_buffer_size_, number_of_packet_buffers_) ),
@@ -21,7 +20,9 @@ WZDmaInputFilter::WZDmaInputFilter(size_t packet_buffer_size_, size_t number_of_
   ncalls(0),
   lastStartTime(tbb::tick_count::now()),
   last_count(0),
-  dma_errors(0)
+  dma_errors(0),
+  dma_oversized(0),
+  control(control_)
 { 
   // Initialize the DMA subsystem 
 	if ( wz_init( &dma ) < 0 ) {
@@ -48,7 +49,8 @@ WZDmaInputFilter::~WZDmaInputFilter() {
 
 namespace tools {
 // Returns a C++ std::string describing ERRNO                     
-const std::string strerror(int error_code) {               
+const std::string strerror(int error_code) 
+{               
   // TODO: Prealocat std::String and use directly its buffer
   char local_buf[128];                                      
   char *buf = local_buf;                                    
@@ -56,47 +58,53 @@ const std::string strerror(int error_code) {
   std::string str(buf);                                     
   return str;                                               
 }    
+
+const std::string strerror() 
+{
+  return tools::strerror(errno);
+}
+
+const std::string strerror(const std::string& msg)
+{
+  return msg + ": " + tools::strerror();
+}
+
+void perror(const std::string& msg)
+{
+  std::cerr << tools::strerror(msg) << std::endl;
+}
 } // namespace tools
 
 
 inline ssize_t WZDmaInputFilter::read_packet(char **buffer)
 {
-  int tries = 0;
+  int tries = 1;
   ssize_t bytes_read;
-
-      // // Some fatal error occured
-      // std::ostringstream os;
-      // os  << "Iteration: " << ncalls 
-      //     << "  ERROR: DMA read failed.";
-      // throw std::system_error(errno, std::system_category(), os.str() );
-
 
   while (1) {
     bytes_read = wz_read_start( &dma, buffer );
 
     if (bytes_read < 0) {
       dma_errors++;
-      perror("Read failed");
+      tools::perror("#" + std::to_string(ncalls) + ": Read failed");
 
       if (errno == EIO) {
-        fprintf(stderr, "Trying to restart DMA: ");
+        std::cerr << "#" << ncalls << ": Trying to restart DMA (attempt #" << tries << "): ";
         wz_stop_dma( &dma );
 
         if (wz_start_dma( &dma ) < 0) {
           throw std::system_error(errno, std::system_category(), "Cannot start WZ DMA device");
         }
 
-        fprintf(stderr, "Success.\n");
+        std::cerr << "Success.\n";
         tries++;
 
         if (tries == 10) {
-          fprintf(stderr, "We are not advancing, terminating.\n");
-          exit(5);
+          throw std::runtime_error("FATAL: Did not manage to restart DMA.");
         }
-
         continue;
       }
-      exit(4);
+      throw std::system_error(errno, std::system_category(), "FATAL: Unrecoverable DMA error detected.");
     }
     break;
   }
@@ -120,16 +128,20 @@ void* WZDmaInputFilter::operator()(void*) {
   ncalls++;
 
   // Read from DMA
-  //bytes_read = read_axi_packet_to_buffer(dma_fd, next_slice->begin(), buffer_size);
+  int skip = 0;
   bytes_read = read_packet( &buffer );
 
-  // This should not happen
-  if (bytes_read > (ssize_t)buffer_size ){
-    std::ostringstream os;
-    os  << "Iteration: " << ncalls 
-        << "  ERROR: DMA read returned " << bytes_read 
-        << " > buffer size " << buffer_size;
-    throw std::runtime_error( os.str() );
+  // If large packet returned, skip and read again
+  while ( bytes_read > (ssize_t)buffer_size ) {
+    dma_oversized++;
+    skip++;
+    std::cerr 
+      << "#" << ncalls << ": ERROR: DMA read returned " << bytes_read << " > buffer size " << buffer_size
+      << ". Skipping packet #" << skip << ".\n";
+    if (skip >= 100) {
+      throw std::runtime_error("FATAL: DMA is still returning large packets.");
+    }
+    bytes_read = read_packet( &buffer );
   }
 
   // This should really not happen
@@ -147,14 +159,17 @@ void* WZDmaInputFilter::operator()(void*) {
   counts += bytes_read;
 
   // TODO: Make this configurable
-  if (ncalls % 5000 == 0) {
+  if (control->packets_per_report && (ncalls % control->packets_per_report == 0)) {
     // Calculate DMA bandwidth
     tbb::tick_count now = tbb::tick_count::now();
     double time_diff =  (double)((now - lastStartTime).seconds());
     lastStartTime = now;
     double bwd = counts / ( time_diff * 1024.0 * 1024.0 );
 
-    std::cout << "#" << ncalls << ": Read(s) returned: " << counts << ", DMA bandwidth " << bwd << "MBytes/sec\n";
+    std::cout 
+      << "#" << ncalls << ": Read(s) returned: " << counts 
+      << ", DMA bandwidth " << bwd << "MBytes/sec, DMA errors " << dma_errors 
+      << ", DMA oversized packets " << dma_oversized << ".\n";
     counts = 0;
   }
 
