@@ -6,5 +6,6 @@ struct ctrl{
   uint32_t run_number;
   bool running;
   uint64_t max_file_size;
+  int packets_per_report;
 };
 #endif 

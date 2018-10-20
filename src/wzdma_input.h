@@ -7,13 +7,14 @@
 #include "tbb/pipeline.h"
 #include "tbb/tick_count.h"
 
+#include "controls.h"
 #include "wz_dma.h"
 
 class Slice;
 
 class WZDmaInputFilter: public tbb::filter {
  public:
-  WZDmaInputFilter(size_t, size_t);
+  WZDmaInputFilter(size_t, size_t, ctrl*);
   ~WZDmaInputFilter();
 
  private:
@@ -26,6 +27,8 @@ class WZDmaInputFilter: public tbb::filter {
   tbb::tick_count lastStartTime;
   uint64_t last_count;
   uint64_t dma_errors;
+  uint64_t dma_oversized;
+  ctrl* control;
 };
 
 typedef std::shared_ptr<WZDmaInputFilter> WZDmaInputFilterPtr;
