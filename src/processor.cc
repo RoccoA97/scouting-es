@@ -6,14 +6,16 @@
 
 StreamProcessor::StreamProcessor(size_t max_size_) : 
   max_size(max_size_),
-  tbb::filter(parallel)
+  tbb::filter(parallel),
+  nbPackets(0)
 { fprintf(stderr,"Created transform filter at 0x%llx \n",(unsigned long long)this);}  
 StreamProcessor::~StreamProcessor(){
   //  fprintf(stderr,"Wrote %d muons \n",totcount);
 }
 
-Slice* process(Slice& input, Slice& out)
+Slice* StreamProcessor::process(Slice& input, Slice& out)
 {
+  nbPackets++;
   int bsize = sizeof(block1);
   if((input.size()-constants::orbit_trailer_size)%bsize!=0){
     std::cout << "WARNING::frame size not a multiple of block size. Will be skipped. Size="
@@ -61,7 +63,7 @@ Slice* process(Slice& input, Slice& out)
     uint32_t bxcount = std::max(mAcount,mBcount);
     if(bxcount == 0) {
       p+=bsize;
-      std::cout << "WARNING::detected a bx with zero muons, this should not happen" << std::endl; 
+      std::cout << '#' << nbPackets << ": WARNING::detected a bx with zero muons, this should not happen. Packet is skipped." << std::endl; 
       continue;
     }
 
