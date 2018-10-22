@@ -15,9 +15,10 @@
 #include <boost/thread.hpp>
 
 
+#include "InputFilter.h"
+#include "FileDmaInputFilter.h"
 #include "wzdma_input.h"
 #include "dma_input.h"
-#include "file_dma_input.h"
 #include "file_input.h"
 #include "processor.h"
 #include "elastico.h"
@@ -37,7 +38,7 @@ using namespace std;
 
 bool silent = false;
 
-int run_pipeline( int nthreads, ctrl *control, config *conf)
+int run_pipeline( int nthreads, ctrl& control, config *conf)
 {
   config::InputType input = conf->getInput();
 
@@ -45,7 +46,7 @@ int run_pipeline( int nthreads, ctrl *control, config *conf)
   size_t TOTAL_SLICES = 0;
 
   // Create empty input reader, will assing later when we know what is the data source 
-  std::shared_ptr<tbb::filter> input_filter;
+  std::shared_ptr<InputFilter> input_filter;
 
   // Create the pipeline
   tbb::pipeline pipeline;
@@ -56,7 +57,8 @@ int run_pipeline( int nthreads, ctrl *control, config *conf)
       TOTAL_SLICES = conf->getNumInputBuffers();
       
       // Create file-reading writing stage and add it to the pipeline
-      input_filter = std::make_shared<FileInputFilter>( conf->getInputFile(), MAX_BYTES_PER_INPUT_SLICE, TOTAL_SLICES );
+      //input_filter = std::make_shared<FileInputFilter>( conf->getInputFile(), MAX_BYTES_PER_INPUT_SLICE, TOTAL_SLICES );
+      throw std::runtime_error("input FILE is not supported");
 
   } else if (input == config::InputType::DMA) {
       // Prepare reading from DMA
@@ -64,15 +66,17 @@ int run_pipeline( int nthreads, ctrl *control, config *conf)
       TOTAL_SLICES = conf->getNumberOfDmaPacketBuffers();
 
       // Create DMA reader
-      input_filter = std::make_shared<DmaInputFilter>( conf->getDmaDevice(), MAX_BYTES_PER_INPUT_SLICE, TOTAL_SLICES );
+      //input_filter = std::make_shared<DmaInputFilter>( conf->getDmaDevice(), MAX_BYTES_PER_INPUT_SLICE, TOTAL_SLICES );
+      throw std::runtime_error("input DMA is not supported");
+
 
   } else if (input == config::InputType::FILEDMA) {
       // Prepare reading from FILE and simulating DMA
       MAX_BYTES_PER_INPUT_SLICE = conf->getDmaPacketBufferSize();
       TOTAL_SLICES = conf->getNumberOfDmaPacketBuffers();
 
-      // Create DMA reader
-      input_filter = std::make_shared<FileDmaInputFilter>( conf->getInputFile(), MAX_BYTES_PER_INPUT_SLICE, TOTAL_SLICES );
+      // Create FILE DMA reader
+      input_filter = std::make_shared<FileDmaInputFilter>( conf->getInputFile(), MAX_BYTES_PER_INPUT_SLICE, TOTAL_SLICES, control );
 
   } else if (input == config::InputType::WZDMA ) {
       // Prepare reading from WZ DMA
@@ -80,7 +84,8 @@ int run_pipeline( int nthreads, ctrl *control, config *conf)
       TOTAL_SLICES = conf->getNumberOfDmaPacketBuffers();
 
       // Create WZ DMA reader
-      input_filter = std::make_shared<WZDmaInputFilter>( MAX_BYTES_PER_INPUT_SLICE, TOTAL_SLICES, control );
+      //input_filter = std::make_shared<WZDmaInputFilter>( MAX_BYTES_PER_INPUT_SLICE, TOTAL_SLICES, &control );
+      throw std::runtime_error("input WZDMA is not supported");
 
   } else {
     throw std::invalid_argument("Configuration error: Unknown input type was specified");
@@ -104,7 +109,7 @@ int run_pipeline( int nthreads, ctrl *control, config *conf)
   std::string url = conf->getElasticUrl();
   // TODO: Created here so we are not subject of scoping, fix later...
   ElasticProcessor elastic_processor(MAX_BYTES_PER_INPUT_SLICE,
-              control,
+              &control,
               url,
               conf->getPtCut(),
               conf->getQualCut());
@@ -115,7 +120,7 @@ int run_pipeline( int nthreads, ctrl *control, config *conf)
   std::string output_file_base = conf->getOutputFilenameBase();
 
   // Create file-writing stage and add it to the pipeline
-  OutputStream output_stream( output_file_base.c_str() , control);
+  OutputStream output_stream( output_file_base.c_str(), &control);
   pipeline.add_filter( output_stream );
 
   // Run the pipeline
@@ -155,7 +160,7 @@ int main( int argc, char* argv[] ) {
 
     int p = conf.getNumThreads();
     tbb::task_scheduler_init init(p);
-    if(!run_pipeline (p,&control, &conf))
+    if(!run_pipeline (p, control, &conf))
       return 1;
 
     //    utility::report_elapsed_time((tbb::tick_count::now() - mainStartTime).seconds());
