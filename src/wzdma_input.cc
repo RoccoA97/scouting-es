@@ -91,6 +91,12 @@ inline ssize_t WZDmaInputFilter::read_packet(char **buffer)
       if (errno == EIO) {
         std::cerr << "#" << ncalls << ": Trying to restart DMA (attempt #" << tries << "): ";
         wz_stop_dma( &dma );
+        wz_close( &dma );
+
+        // Initialize the DMA subsystem 
+        if ( wz_init( &dma ) < 0 ) {
+          throw std::system_error(errno, std::system_category(), "Cannot initialize WZ DMA device");
+        }
 
         if (wz_start_dma( &dma ) < 0) {
           throw std::system_error(errno, std::system_category(), "Cannot start WZ DMA device");
