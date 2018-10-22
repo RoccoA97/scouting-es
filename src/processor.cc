@@ -12,10 +12,9 @@ StreamProcessor::~StreamProcessor(){
   //  fprintf(stderr,"Wrote %d muons \n",totcount);
 }
 
-void* StreamProcessor::operator()( void* item ){
+Slice* process(Slice& input, Slice& out)
+{
   int bsize = sizeof(block1);
-  Slice& input = *static_cast<Slice*>(item);
-  Slice& out = *Slice::allocate( 2*max_size);
   if((input.size()-constants::orbit_trailer_size)%bsize!=0){
     std::cout << "WARNING::frame size not a multiple of block size. Will be skipped. Size="
 	      << input.size() << " - block size=" << bsize << std::endl;
@@ -101,7 +100,16 @@ void* StreamProcessor::operator()( void* item ){
     //     q = strchr(q,0);
     // }
     out.set_end(q);
-    Slice::giveAllocated(&input);
     out.set_counts(counts);
-    return &out;
+    return &out;  
+}
+
+void* StreamProcessor::operator()( void* item ){
+  Slice& input = *static_cast<Slice*>(item);
+  Slice& out = *Slice::allocate( 2*max_size);
+
+  process(input, out);
+
+  Slice::giveAllocated(&input);
+  return &out;
 }
