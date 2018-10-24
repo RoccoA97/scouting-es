@@ -24,6 +24,8 @@ extern "C" {
     int wz_stop_dma(struct wz_private* wz);
     ssize_t wz_read_start(struct wz_private* wz, char **buffer);
     int wz_read_complete(struct wz_private* wz);
+
+	int wz_reset_board();
 #ifdef __cplusplus
 } // extern "C"
 #endif

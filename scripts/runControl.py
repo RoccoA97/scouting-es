@@ -20,7 +20,8 @@ if __name__ == "__main__":
         beamMode = data['lhcBeamMode']
         daqState = data['daqState']
         print "daq state ",daqState," beamMode ",beamMode," runNumber ",runNumber
-        if not scouting_running:
+        #if not scouting_running:
+	if True:
             if beamMode=='STABLE BEAMS' and daqState=='Running':
                 print "going to start scouting for run ",runNumber
                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -41,8 +42,8 @@ if __name__ == "__main__":
                 except:
                     print "error in connecting to scout daq"
 
-
-        if scouting_running:
+	if True:
+        #if scouting_running:
             if beamMode!='STABLE BEAMS' or daqState != 'Running':
                 print "going to stop scouting for run ", current_run
                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

@@ -130,8 +130,6 @@ inline int wz_read_complete(struct wz_private* wz)
 }
 
 
-
-
 /* 
  * The user logic is driving custom FPGA logic. This is not necessary to use if not implemented in the FPGA.
  */
@@ -149,3 +147,60 @@ inline void wz_stop_source(struct wz_private* wz)
 	asm volatile ("" : : : "memory");
 }
 
+
+#include <stdio.h> 
+#include <arpa/inet.h>
+
+/*
+ * Normally, one should write to a register. But because we don't have a support for register for
+ * the moment, we use a server connected to Vivado to do a reset
+ */ 
+int wz_reset_board()
+{
+    struct sockaddr_in saddr_in;
+    int sock;
+    char buf[12];
+    int bytes_read;
+
+    // Fill the server address
+    inet_aton("10.176.60.136", &(saddr_in.sin_addr));
+    saddr_in.sin_family = AF_INET;
+    saddr_in.sin_port = htons(12345);
+
+    //print out IP address
+    printf("Server IP:  %s\n", inet_ntoa(saddr_in.sin_addr));
+
+    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+        perror("Socket");
+        return -1;
+    }
+
+    // Connect socket to the server
+    if (connect(sock, (struct sockaddr *) &saddr_in, sizeof(struct sockaddr_in)) < 0) {
+        perror("Connect");
+        goto error;
+    }
+
+    if (send(sock, "reset\n", 6, 0) < 0) {
+        perror("Send");
+        goto error;
+    }
+
+    if ((bytes_read = recv(sock, buf, sizeof(buf) - 1, 0)) < 0) {
+        perror("Recv");
+        goto error;
+    }
+
+    // Put null terminating character
+    buf[bytes_read] = 0;
+    printf("Received '%s'\n", buf);
+
+    close(sock);
+
+    printf("Finished\n");
+    return 0;
+
+error:
+    close(sock);
+    return -1;
+}
