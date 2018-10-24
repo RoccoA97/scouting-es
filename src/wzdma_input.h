@@ -28,6 +28,7 @@ class WZDmaInputFilter: public tbb::filter {
   uint64_t last_count;
   uint64_t dma_errors;
   uint64_t dma_oversized;
+  uint64_t board_resets;
   ctrl* control;
 };
 
