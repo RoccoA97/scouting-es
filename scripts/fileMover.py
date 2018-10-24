@@ -7,15 +7,14 @@ if __name__ == "__main__":
     import os
 
     while True:
-        onlyfiles = [f for f in listdir('/fff/ramdisk/scdaq') if isfile(join('/fff/ramdisk/scdaq', f))]
+        onlyfiles = [f for f in listdir('/fff/ramdisk/scdaq') if isfile(join('/fff/ramdisk/scdaq', f)) and f.endswith('.dat')]
         if len(onlyfiles)==0:
             print "waiting for new file..."
             time.sleep(30)
         print onlyfiles
-        time.sleep(100)
         for f in onlyfiles:
             full_filename = join('/fff/ramdisk/scdaq', f)
-            outfile = f+'bz2'
+            outfile = f+'.bz2'
             dest_name = join('/fff/output/scdaq',outfile)
             command = "lbzip2 "+full_filename+" -c > "+dest_name
             print "compressing "+full_filename
