@@ -7,6 +7,8 @@
 #include "controls.h"
 
 size_t dummy(char *data, size_t n, size_t l, void *s) { 
+  (void)(data); // TODO: Unused variable
+  (void)(s);    // TODO: Unused variable
   //  std::cout << data << std::endl;
 return n*l; }
 
@@ -97,7 +99,7 @@ void ElasticProcessor::makeAppendToBulkRequest(std::ostringstream &particle_data
   
   uint32_t bx=*p++;
   uint32_t orbit=*p++;
-  for(unsigned int i = 0; i < mAcount; i++){
+  for(/*unsigned*/ int i = 0; i < mAcount; i++){
     uint32_t mf = *p++;
     uint32_t ms = *p++;
     uint32_t ipt = (mf >> shifts::pt) & masks::pt;
@@ -117,6 +119,12 @@ void ElasticProcessor::makeAppendToBulkRequest(std::ostringstream &particle_data
     uint32_t ieta = (ms >> shifts::eta) & masks::etav;
     if(((mf >> shifts::eta) & masks::etas)!=0) ieta -= 512;
     float eta = ieta*gmt_scales::eta_scale;
+
+    (void)(iso);      // TODO: Unused variable
+    (void)(chrgv);    // TODO: Unused variable
+    (void)(mBcount);  // TODO: Unused variable
+    (void)(index);    // TODO: Unused variable
+
     particle_data << "{\"index\" : {}}\n" 
 		  << "{\"orbit\": " <<  orbit << ',' 
 		  << "\"bx\": "     <<  bx << ',' 
@@ -147,6 +155,9 @@ void* ElasticProcessor::operator()( void* item ){
     curl_easy_setopt(handle, CURLOPT_POSTFIELDSIZE,particle_data.str().length());
     curl_easy_setopt(handle, CURLOPT_COPYPOSTFIELDS, particle_data.str().c_str()); /* data goes here */
     int res = curl_easy_perform(handle);
+
+    (void)(res);    // TODO: Unused variable
+
   }
   if(!control->running && !c_request_url.empty()){
     c_request_url.clear();

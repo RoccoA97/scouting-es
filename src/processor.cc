@@ -5,8 +5,8 @@
 #include <iostream>
 
 StreamProcessor::StreamProcessor(size_t max_size_) : 
-  max_size(max_size_),
   tbb::filter(parallel),
+  max_size(max_size_),
   nbPackets(0)
 { fprintf(stderr,"Created transform filter at 0x%llx \n",(unsigned long long)this);}  
 StreamProcessor::~StreamProcessor(){
