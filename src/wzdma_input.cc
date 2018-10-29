@@ -22,6 +22,7 @@ WZDmaInputFilter::WZDmaInputFilter(size_t packet_buffer_size_, size_t number_of_
   last_count(0),
   dma_errors(0),
   dma_oversized(0),
+  board_resets(0),
   control(control_)
 { 
   // Initialize the DMA subsystem 
@@ -135,6 +136,7 @@ void* WZDmaInputFilter::operator()(void*) {
 
   // Read from DMA
   int skip = 0;
+  int reset = 0;
   bytes_read = read_packet( &buffer );
 
   // If large packet returned, skip and read again
@@ -144,8 +146,31 @@ void* WZDmaInputFilter::operator()(void*) {
     std::cerr 
       << "#" << ncalls << ": ERROR: DMA read returned " << bytes_read << " > buffer size " << buffer_size
       << ". Skipping packet #" << skip << ".\n";
-    if (skip >= 100) {
-      throw std::runtime_error("FATAL: DMA is still returning large packets.");
+    if (skip > 100) {
+      reset++;
+      board_resets++;
+
+      if (reset > 10) {
+        std::cerr << "Resets didn't help!\n";
+        throw std::runtime_error("FATAL: DMA is still returning large packets.");
+      }
+
+      // Oversized packet is usually sign of link problem
+      // Let's try to reset the board
+      std::cerr << "Goging to reset the board: \n";
+      if (wz_reset_board() < 0) {
+        std::cerr << "Reset finished\n";
+      } else {
+        std::cerr << "Reset succesfull\n";
+      }
+
+      std::cerr << "Waiting for 30 seconds to clear any collected crap: ";
+      // Sleep for 30 seconds (TCDS may be paused)
+      for (int i=0; i<30; i++) {
+        std::cout << '.';
+        usleep(1000000);
+      }
+      std::cerr << " OK\n";
     }
     bytes_read = read_packet( &buffer );
   }
@@ -175,7 +200,8 @@ void* WZDmaInputFilter::operator()(void*) {
     std::cout 
       << "#" << ncalls << ": Read(s) returned: " << counts 
       << ", DMA bandwidth " << bwd << "MBytes/sec, DMA errors " << dma_errors 
-      << ", DMA oversized packets " << dma_oversized << ".\n";
+      << ", DMA oversized packets " << dma_oversized 
+      << ", board resets " << board_resets << ".\n";
     counts = 0;
   }
 
