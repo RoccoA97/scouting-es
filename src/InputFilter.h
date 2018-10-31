@@ -2,6 +2,7 @@
 #define INPUT_FILTER_H
 
 #include <cstddef>
+#include <iostream>
 
 #include "tbb/pipeline.h"
 #include "tbb/tick_count.h"
@@ -16,10 +17,10 @@ class Slice;
  */ 
 class InputFilter: public tbb::filter {
 public:
-  //InputFilter( FILE*, size_t, size_t);
   InputFilter(size_t packet_buffer_size, size_t number_of_packet_buffers, ctrl& control);
   virtual ~InputFilter();
 
+  // Return the number of read calls
   uint64_t nbReads() { return nbReads_; }
 
 protected:
@@ -27,12 +28,18 @@ protected:
   virtual ssize_t readInput(char **buffer, size_t bufferSize) = 0;
 
   // Notify the read that the buffer returned by readInput is processed (can be freed or reused)
-  virtual void readComplete(char *buffer) = 0;
+  // The default implementation does nothing, since this function is required only in special cases like e.g. zero copy read
+  virtual void readComplete(char *buffer) { (void)(buffer); }
+
+  // Allow overridden function to print some additional info 
+  virtual void print(std::ostream& out) const = 0;
 
 private:
-  void* operator()(void* item); // Override
+  void* operator()(void* item); 
 
-  inline ssize_t readHelper(char **buffer, size_t buffer_size);
+  // NOTE: This can be moved out of this class into a separate one
+  //       and run in a single thread in order to do reporting...
+  void printStats(std::ostream& out);
 
 private:
   ctrl& control_;
@@ -46,13 +53,7 @@ private:
   // Number of byted read
   uint64_t nbBytesRead_;
 
-  // Number of read errors detected
-  uint64_t nbErrors_;
-
-  // Number of oversized packets returned ()
-  uint64_t nbOversized_;  
-
-  // Performance monitoring
+  // For Performance monitoring
 
   // Snapshot of nbBytesRead_
   uint64_t previousNbBytesRead_;

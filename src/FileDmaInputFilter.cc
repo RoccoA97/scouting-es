@@ -84,8 +84,43 @@ static inline ssize_t read_dma_packet_from_file(FILE *inputFile, char *buffer, u
 }
 
 
+inline ssize_t FileDmaInputFilter::readPacket(char **buffer, size_t bufferSize)
+{
+  // Read from DMA
+  int skip = 0;
+  ssize_t bytesRead = read_dma_packet_from_file(inputFile, *buffer, bufferSize, nbReads() );
+
+  // If large packet returned, skip and read again
+  while ( bytesRead > (ssize_t)bufferSize ) {
+    stats.nbOversizedPackets++;
+    skip++;
+    std::cerr 
+      << "#" << nbReads() << ": ERROR: Read returned " << bytesRead << " > buffer size " << bufferSize
+      << ". Skipping packet #" << skip << ".\n";
+    if (skip >= 100) {
+      throw std::runtime_error("FATAL: Read is still returning large packets.");
+    }
+    bytesRead = read_dma_packet_from_file(inputFile, *buffer, bufferSize, nbReads() );
+  }
+
+  return bytesRead;
+}
+
+
+/**************************************************************************
+ * Entry points are here
+ * Overriding virtual functions
+ */
+
+// Print some additional info
+void  FileDmaInputFilter::print(std::ostream& out) const
+{
+  out << ", oversized packets " << stats.nbOversizedPackets;
+}
+
 ssize_t FileDmaInputFilter::readInput(char **buffer, size_t bufferSize)
 {
-  return read_dma_packet_from_file(inputFile, *buffer, bufferSize, nbReads() );
+  return readPacket( buffer, bufferSize );
 }
+
 

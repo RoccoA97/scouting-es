@@ -16,12 +16,17 @@ public:
 
 protected:
   ssize_t readInput(char **buffer, size_t bufferSize); // Override
+  void print(std::ostream& out) const;  // Override
 
-  // When reading from file this method does nothing
-  void readComplete(char *buffer) { (void)(buffer); }
+private:
+  ssize_t readPacket(char **buffer, size_t bufferSize);
 
 private:
   FILE* inputFile;
+
+  struct Statistics {
+    uint64_t nbOversizedPackets = 0;
+  } stats;  
 };
 
 typedef std::shared_ptr<FileDmaInputFilter> FileDmaInputFilterPtr;

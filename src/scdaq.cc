@@ -17,7 +17,7 @@
 
 #include "InputFilter.h"
 #include "FileDmaInputFilter.h"
-#include "wzdma_input.h"
+#include "WZDmaInputFilter.h"
 #include "dma_input.h"
 #include "file_input.h"
 #include "processor.h"
@@ -42,8 +42,8 @@ int run_pipeline( int nthreads, ctrl& control, config *conf)
 {
   config::InputType input = conf->getInput();
 
-  size_t MAX_BYTES_PER_INPUT_SLICE = 0;
-  size_t TOTAL_SLICES = 0;
+  size_t MAX_BYTES_PER_INPUT_SLICE = conf->getDmaPacketBufferSize();
+  size_t TOTAL_SLICES = conf->getNumberOfDmaPacketBuffers();
 
   // Create empty input reader, will assing later when we know what is the data source 
   std::shared_ptr<InputFilter> input_filter;
@@ -52,40 +52,25 @@ int run_pipeline( int nthreads, ctrl& control, config *conf)
   tbb::pipeline pipeline;
 
   if (input == config::InputType::FILE) {
-     // Prepare reading from FILE
+      // Create file-reading writing stage and add it to the pipeline
       MAX_BYTES_PER_INPUT_SLICE = 192*conf->getBlocksPerInputBuffer();
       TOTAL_SLICES = conf->getNumInputBuffers();
       
-      // Create file-reading writing stage and add it to the pipeline
       //input_filter = std::make_shared<FileInputFilter>( conf->getInputFile(), MAX_BYTES_PER_INPUT_SLICE, TOTAL_SLICES );
-      throw std::runtime_error("input FILE is not supported");
+      throw std::runtime_error("input type FILE is temporarily not supported");
 
   } else if (input == config::InputType::DMA) {
-      // Prepare reading from DMA
-      MAX_BYTES_PER_INPUT_SLICE = conf->getDmaPacketBufferSize();
-      TOTAL_SLICES = conf->getNumberOfDmaPacketBuffers();
-
       // Create DMA reader
       //input_filter = std::make_shared<DmaInputFilter>( conf->getDmaDevice(), MAX_BYTES_PER_INPUT_SLICE, TOTAL_SLICES );
-      throw std::runtime_error("input DMA is not supported");
-
+      throw std::runtime_error("input type DMA is temporarily not supported");
 
   } else if (input == config::InputType::FILEDMA) {
-      // Prepare reading from FILE and simulating DMA
-      MAX_BYTES_PER_INPUT_SLICE = conf->getDmaPacketBufferSize();
-      TOTAL_SLICES = conf->getNumberOfDmaPacketBuffers();
-
       // Create FILE DMA reader
       input_filter = std::make_shared<FileDmaInputFilter>( conf->getInputFile(), MAX_BYTES_PER_INPUT_SLICE, TOTAL_SLICES, control );
 
   } else if (input == config::InputType::WZDMA ) {
-      // Prepare reading from WZ DMA
-      MAX_BYTES_PER_INPUT_SLICE = conf->getDmaPacketBufferSize();
-      TOTAL_SLICES = conf->getNumberOfDmaPacketBuffers();
-
       // Create WZ DMA reader
-      //input_filter = std::make_shared<WZDmaInputFilter>( MAX_BYTES_PER_INPUT_SLICE, TOTAL_SLICES, &control );
-      throw std::runtime_error("input WZDMA is not supported");
+      input_filter = std::make_shared<WZDmaInputFilter>( MAX_BYTES_PER_INPUT_SLICE, TOTAL_SLICES, control );
 
   } else {
     throw std::invalid_argument("Configuration error: Unknown input type was specified");
