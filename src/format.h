@@ -13,6 +13,16 @@ struct block1{
   uint32_t mu2s[8];
 };
 
+// struct out_block1{
+//   uint32_t header;
+//   uint32_t bx;
+//   uint32_t orbit;
+
+//   // In the header is information of how many of muons are there
+//   uint32_t mu_w1;
+//   uint32_t mu_w2;
+// };
+
 struct masks{
   static constexpr  uint32_t phiext = 0x1ff;
   static constexpr  uint32_t pt = 0x1ff;
