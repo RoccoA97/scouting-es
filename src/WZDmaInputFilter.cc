@@ -2,6 +2,7 @@
 #include <cerrno>
 #include <system_error>
 #include <iostream>
+#include <string>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -16,7 +17,11 @@ WZDmaInputFilter::WZDmaInputFilter( size_t packetBufferSize, size_t nbPacketBuff
 { 
   // Initialize the DMA subsystem 
 	if ( wz_init( &dma_ ) < 0 ) {
-    throw std::system_error(errno, std::system_category(), "Cannot initialize WZ DMA device");
+    std::string msg = "Cannot initialize WZ DMA device";
+    if (errno == ENOENT) {
+      msg += ". Check if xdma kernel module is loaded ('lsmod | grep xdma') and the board is visible on the PCIe bus ('lspci | grep Xilinx'). Error";
+    }
+    throw std::system_error(errno, std::system_category(), msg);
   }
 
 	// Start the DMA
@@ -44,7 +49,7 @@ inline ssize_t WZDmaInputFilter::read_packet_from_dma(char **buffer)
 
     if (bytes_read < 0) {
       stats.nbDmaErrors++;
-      tools::perror("#" + std::to_string( nbReads() ) + ": Read failed");
+      tools::perror("#" + std::to_string( nbReads() ) + ": Read failed, returned: " + std::to_string(bytes_read));
 
       if (errno == EIO) {
         std::cerr << "#" << nbReads() << ": Trying to restart DMA (attempt #" << tries << "): ";
