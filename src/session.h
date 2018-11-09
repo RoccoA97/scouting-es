@@ -8,6 +8,17 @@
 #include <string>
 #include "controls.h"
 
+/*
+ * string_view is available in C++17, let's make it available now with a little trick.
+ * Remove this later, when we have C++17 compiler
+ */
+#include <boost/utility/string_ref.hpp> 
+
+namespace std {
+using string_view = boost::string_ref;
+}
+/*****************************************************************************/
+
 using boost::asio::ip::tcp;
 
 
@@ -35,7 +46,7 @@ public:
   }
 
 private:
-  int process_command(const std::string& input, char *output, size_t size)
+  int process_command(std::string_view input, char *output, size_t size)
   {
     try {
       std::vector<std::string> items;
@@ -85,10 +96,13 @@ private:
   {
     if (!error)
     {
-      std::string input(data_, 0, bytes_transferred);
-      std::cout << "handle read '" << input << "'\n";
+      std::string_view input(data_, bytes_transferred);
+      std::cout << "Run control: Received: '" << input << "'\n";
 
       bytes_transferred = process_command(input, data_, max_length);
+
+      std::string_view output(data_, bytes_transferred);
+      std::cout << "Run control: Sending:  '" << output << "'\n";
 
       boost::asio::async_write(socket_,
           boost::asio::buffer(data_, bytes_transferred),
@@ -106,12 +120,12 @@ private:
   {
     if (!error)
     {
-      printf("handle write\n");
+      //printf("handle write\n");
       socket_.async_read_some(boost::asio::buffer(data_, max_length),
           boost::bind(&session::handle_read, this,
             boost::asio::placeholders::error,
             boost::asio::placeholders::bytes_transferred));
-      printf("what got '%s'\n",data_);
+      //printf("what got '%s'\n",data_);
     }
     else
     {

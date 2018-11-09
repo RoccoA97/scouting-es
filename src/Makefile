@@ -57,7 +57,7 @@ ${TARGET}: ${OBJECTS}
 
 #test2.o : product.h test2.h
 
-scdaq.o:	file_input.h processor.h elastico.h output.h format.h server.h controls.h config.h
+scdaq.o:	file_input.h processor.h elastico.h output.h format.h server.h controls.h config.h session.h
 config.o:	config.h
 dma_input.o:	dma_input.h slice.h
 elastico.o:	elastico.h format.h slice.h controls.h
