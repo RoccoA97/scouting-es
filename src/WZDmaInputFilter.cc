@@ -10,6 +10,7 @@
 
 #include "tools.h"
 #include "WZDmaInputFilter.h"
+#include "log.h"
 
 
 WZDmaInputFilter::WZDmaInputFilter( size_t packetBufferSize, size_t nbPacketBuffers, ctrl& control ) : 
@@ -29,13 +30,13 @@ WZDmaInputFilter::WZDmaInputFilter( size_t packetBufferSize, size_t nbPacketBuff
     throw std::system_error(errno, std::system_category(), "Cannot start WZ DMA");
 	}
 
-  std::cerr << "Created WZ DMA input filter\n"; 
+  LOG(TRACE) << "Created WZ DMA input filter"; 
 }
 
 WZDmaInputFilter::~WZDmaInputFilter() {
   wz_stop_dma( &dma_ );
 	wz_close( &dma_ );
-  std::cerr << "Destroyed WZ DMA input filter\n";
+  LOG(TRACE) << "Destroyed WZ DMA input filter";
 }
 
 

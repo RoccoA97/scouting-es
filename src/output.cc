@@ -1,9 +1,9 @@
 #include <system_error>
-#include <iostream>
 #include <fstream>
 
 #include "output.h"
 #include "slice.h"
+#include "log.h"
 
 
 OutputStream::OutputStream( const char* output_file_base, ctrl *c) : 
@@ -17,7 +17,7 @@ OutputStream::OutputStream( const char* output_file_base, ctrl *c) :
     current_run_number(0),
     journal_name(my_output_file_base + "/" + "index.journal")
 {
-  fprintf(stderr,"Created output filter at 0x%llx \n",(unsigned long long)this);  
+  LOG(TRACE) << "Created output filter at " << static_cast<void*>(this);
 }
 
 static void update_journal(std::string journal_name, uint32_t run_number, uint32_t index)
@@ -30,7 +30,7 @@ static void update_journal(std::string journal_name, uint32_t run_number, uint32
     journal << run_number << "\n" << index << "\n";
     journal.close();
   } else {
-    std::cerr << "WARNING: Unable to open journal file";
+    LOG(ERROR) << "WARNING: Unable to open journal file";
   }
 
   // Replace the old journal
@@ -106,18 +106,18 @@ void OutputStream::open_next_file(){
     uint32_t index;
 
     if (read_journal(journal_name, run_number, index)) {
-      std::cout << "We have journal:\n";
-      std::cout << "  run_number: " << run_number << '\n';
-      std::cout << "  index:      " << index << "\n";   
+      LOG(INFO) << "We have journal:";
+      LOG(INFO) << "  run_number: " << run_number;
+      LOG(INFO) << "  index:      " << index;   
     } else {
-      std::cout << "No journal file.\n";
+      LOG(INFO) << "No journal file.\n";
     }
 
-    std::cout << "Current run_number: " << current_run_number << '\n';
+    LOG(INFO) << "Current run_number: " << current_run_number;
     if (current_run_number == run_number) {
       file_count = index;
     }
-    std::cout << "  using index:      " << file_count << '\n';    
+    LOG(INFO) << "  using index:      " << file_count;    
   }
 
   // Create a new file

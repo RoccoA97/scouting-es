@@ -1,6 +1,6 @@
-#include <iostream>
 #include <fstream>
 #include "config.h"
+#include "log.h"
 
 config::config(std::string filename){
   std::ifstream in(filename.c_str(),std::ios_base::in);
@@ -43,7 +43,7 @@ config::config(std::string filename){
 }
 void config::print()const {
   for (std::map<std::string,std::string>::const_iterator it = vmap.begin(); it!=vmap.end(); it++){
-    std::cout << "key " << it->first << " value " << it->second << std::endl;
+    LOG(INFO) << "key " << it->first << " value " << it->second;
   }
 
 }

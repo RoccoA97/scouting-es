@@ -1,8 +1,6 @@
 #include <cassert>
-#include <cstdio>
 #include <cerrno>
 #include <system_error>
-#include <iostream>
 #include <sstream>
 
 #include <sys/types.h>
@@ -10,6 +8,7 @@
 #include <fcntl.h>
 
 #include "FileDmaInputFilter.h"
+#include "log.h"
 
 
 FileDmaInputFilter::FileDmaInputFilter( const std::string& fileName, size_t packetBufferSize, size_t nbPacketBuffers, ctrl& control ) : 
@@ -19,12 +18,12 @@ FileDmaInputFilter::FileDmaInputFilter( const std::string& fileName, size_t pack
   if ( !inputFile ) {
     throw std::invalid_argument( "Invalid input file name: " + fileName );
   }
-  std::cerr << "Created file input filter\n"; 
+  LOG(TRACE) << "Created file input filter"; 
 }
 
 FileDmaInputFilter::~FileDmaInputFilter() {
   fclose( inputFile );
-  std::cerr << "Destroyed file input filter\n";
+  LOG(TRACE) << "Destroyed file input filter";
 }
 
 /*
@@ -94,9 +93,9 @@ inline ssize_t FileDmaInputFilter::readPacket(char **buffer, size_t bufferSize)
   while ( bytesRead > (ssize_t)bufferSize ) {
     stats.nbOversizedPackets++;
     skip++;
-    std::cerr 
+    LOG(ERROR)  
       << "#" << nbReads() << ": ERROR: Read returned " << bytesRead << " > buffer size " << bufferSize
-      << ". Skipping packet #" << skip << ".\n";
+      << ". Skipping packet #" << skip << ".";
     if (skip >= 100) {
       throw std::runtime_error("FATAL: Read is still returning large packets.");
     }

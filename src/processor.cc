@@ -1,14 +1,17 @@
-#include <cstdio>
 #include "processor.h"
 #include "format.h"
 #include "slice.h"
-#include <iostream>
+#include "log.h"
 
 StreamProcessor::StreamProcessor(size_t max_size_) : 
   tbb::filter(parallel),
   max_size(max_size_),
   nbPackets(0)
-{ fprintf(stderr,"Created transform filter at 0x%llx \n",(unsigned long long)this);}  
+{ 
+  LOG(TRACE) << "Created transform filter at " << static_cast<void*>(this);
+}  
+
+
 StreamProcessor::~StreamProcessor(){
   //  fprintf(stderr,"Wrote %d muons \n",totcount);
 }
@@ -18,8 +21,9 @@ Slice* StreamProcessor::process(Slice& input, Slice& out)
   nbPackets++;
   int bsize = sizeof(block1);
   if((input.size()-constants::orbit_trailer_size)%bsize!=0){
-    std::cout << "WARNING::frame size not a multiple of block size. Will be skipped. Size="
-	      << input.size() << " - block size=" << bsize << std::endl;
+    LOG(WARNING)
+      << "Frame size not a multiple of block size. Will be skipped. Size="
+	    << input.size() << " - block size=" << bsize;
     return &out;
   }
   char* p = input.begin();
@@ -63,7 +67,7 @@ Slice* StreamProcessor::process(Slice& input, Slice& out)
     uint32_t bxcount = std::max(mAcount,mBcount);
     if(bxcount == 0) {
       p+=bsize;
-      std::cout << '#' << nbPackets << ": WARNING::detected a bx with zero muons, this should not happen. Packet is skipped." << std::endl; 
+      LOG(WARNING) << '#' << nbPackets << ": Detected a bx with zero muons, this should not happen. Packet is skipped."; 
       continue;
     }
 

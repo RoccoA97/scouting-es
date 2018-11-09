@@ -57,17 +57,17 @@ ${TARGET}: ${OBJECTS}
 
 #test2.o : product.h test2.h
 
-scdaq.o:	file_input.h processor.h elastico.h output.h format.h server.h controls.h config.h session.h
-config.o:	config.h
+scdaq.o:	file_input.h processor.h elastico.h output.h format.h server.h controls.h config.h session.h log.h
+config.o:	config.h log.h
 dma_input.o:	dma_input.h slice.h
-elastico.o:	elastico.h format.h slice.h controls.h
+elastico.o:	elastico.h format.h slice.h controls.h log.h
 file_dma_input.o:	file_dma_input.h
-FileDmaInputFilter.o:	FileDmaInputFilter.h InputFilter.h
+FileDmaInputFilter.o:	FileDmaInputFilter.h InputFilter.h log.h
 file_input.o:	file_input.h slice.h utility.h
-InputFilter.o:	InputFilter.h
-output.o:	output.h slice.h
-processor.o:	processor.h slice.h format.h
-session.o:	session.h
+InputFilter.o:	InputFilter.h log.h
+output.o:	output.h slice.h log.h
+processor.o:	processor.h slice.h format.h log.h
+session.o:	session.h log.h
 slice.o: 	slice.h
-WZDmaInputFilter.o:	WZDmaInputFilter.h InputFilter.h tools.h
+WZDmaInputFilter.o:	WZDmaInputFilter.h InputFilter.h tools.h log.h
 wz_dma.o:	wz_dma.h

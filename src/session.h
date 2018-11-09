@@ -8,6 +8,8 @@
 #include <string>
 #include "controls.h"
 
+#include "log.h"
+
 /*
  * string_view is available in C++17, let's make it available now with a little trick.
  * Remove this later, when we have C++17 compiler
@@ -97,12 +99,12 @@ private:
     if (!error)
     {
       std::string_view input(data_, bytes_transferred);
-      std::cout << "Run control: Received: '" << input << "'\n";
+      LOG(INFO) << "Run control: Received: '" << input << '\'';
 
       bytes_transferred = process_command(input, data_, max_length);
 
       std::string_view output(data_, bytes_transferred);
-      std::cout << "Run control: Sending:  '" << output << "'\n";
+      LOG(INFO) << "Run control: Sending:  '" << output << '\'';
 
       boost::asio::async_write(socket_,
           boost::asio::buffer(data_, bytes_transferred),
