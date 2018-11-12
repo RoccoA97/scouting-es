@@ -128,6 +128,9 @@ inline ssize_t WZDmaInputFilter::read_packet( char **buffer, size_t bufferSize )
         usleep(1000000);
       }
       LOG(ERROR) << " OK";
+
+      // Reset skipped packets counter
+      skip = 0;
     }
     bytesRead = read_packet_from_dma( buffer );
   }
