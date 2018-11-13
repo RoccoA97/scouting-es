@@ -5,6 +5,7 @@
 #include "format.h"
 #include "slice.h"
 #include "controls.h"
+#include "log.h"
 
 size_t dummy(char *data, size_t n, size_t l, void *s) { 
   (void)(data); // TODO: Unused variable
@@ -23,7 +24,10 @@ ElasticProcessor::ElasticProcessor(size_t max_size_, ctrl *c, std::string requrl
   qual_cut(qualcut),
   handle(0),
   headers(NULL)
-{ fprintf(stderr,"Created elastico filter at 0x%llx \n",(unsigned long long)this);}  
+{ 
+  LOG(TRACE) << "Created elastico filter at " << static_cast<void*>(this);
+}
+
 ElasticProcessor::~ElasticProcessor(){
   //  fprintf(stderr,"Wrote %d muons \n",totcount);
 }

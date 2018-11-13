@@ -27,6 +27,7 @@
 #include "server.h"
 #include "controls.h"
 #include "config.h"
+#include "log.h"
 
 using namespace std;
 
@@ -79,9 +80,9 @@ int run_pipeline( int nthreads, ctrl& control, config *conf)
   // Add input reader to a pipeline
   pipeline.add_filter( *input_filter );
 
-  std::cout << "Configuration translated into:\n";;
-  std::cout << "  MAX_BYTES_PER_INPUT_SLICE: " << MAX_BYTES_PER_INPUT_SLICE << '\n';
-  std::cout << "  TOTAL_SLICES: " << TOTAL_SLICES << '\n';
+  LOG(INFO) << "Configuration translated into:";
+  LOG(INFO) << "  MAX_BYTES_PER_INPUT_SLICE: " << MAX_BYTES_PER_INPUT_SLICE;
+  LOG(INFO) << "  TOTAL_SLICES: " << TOTAL_SLICES;
 
   // Create reformatter and add it to the pipeline
   // TODO: Created here so we are not subject of scoping, fix later...
@@ -115,7 +116,9 @@ int run_pipeline( int nthreads, ctrl& control, config *conf)
   pipeline.run( nthreads*4 );
   tbb::tick_count t1 = tbb::tick_count::now();
 
-  if ( !silent ) printf("time = %g\n", (t1-t0).seconds());
+  if ( !silent ) {
+    LOG(INFO) << "time = " << (t1-t0).seconds();
+  }
 
   return 1;
 }
@@ -125,11 +128,12 @@ int run_pipeline( int nthreads, ctrl& control, config *conf)
 int main( int argc, char* argv[] ) {
   (void)(argc);
   (void)(argv);
-    printf("here 0\n");
+  LOG(DEBUG) << "here 0";
+
   try {
     config conf("scdaq.conf");
     conf.print();
-    printf("here 1\n");
+    LOG(DEBUG) << "here 1";
     ctrl control;
     //    tbb::tick_count mainStartTime = tbb::tick_count::now();
 
@@ -152,7 +156,7 @@ int main( int argc, char* argv[] ) {
 
     return 0;
   } catch(std::exception& e) {
-    std::cerr<<"error occurred. error text is :\"" <<e.what()<<"\"\n";
+    LOG(ERROR) << "error occurred. error text is :\"" << e.what() << "\"";
     return 1;
   }
 }

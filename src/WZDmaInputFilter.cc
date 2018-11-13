@@ -1,7 +1,7 @@
 #include <cassert>
 #include <cerrno>
 #include <system_error>
-#include <iostream>
+#include <string>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -9,6 +9,7 @@
 
 #include "tools.h"
 #include "WZDmaInputFilter.h"
+#include "log.h"
 
 
 WZDmaInputFilter::WZDmaInputFilter( size_t packetBufferSize, size_t nbPacketBuffers, ctrl& control ) : 
@@ -16,7 +17,11 @@ WZDmaInputFilter::WZDmaInputFilter( size_t packetBufferSize, size_t nbPacketBuff
 { 
   // Initialize the DMA subsystem 
 	if ( wz_init( &dma_ ) < 0 ) {
-    throw std::system_error(errno, std::system_category(), "Cannot initialize WZ DMA device");
+    std::string msg = "Cannot initialize WZ DMA device";
+    if (errno == ENOENT) {
+      msg += ". Check if xdma kernel module is loaded ('lsmod | grep xdma') and the board is visible on the PCIe bus ('lspci | grep Xilinx'). Error";
+    }
+    throw std::system_error(errno, std::system_category(), msg);
   }
 
 	// Start the DMA
@@ -24,13 +29,13 @@ WZDmaInputFilter::WZDmaInputFilter( size_t packetBufferSize, size_t nbPacketBuff
     throw std::system_error(errno, std::system_category(), "Cannot start WZ DMA");
 	}
 
-  std::cerr << "Created WZ DMA input filter\n"; 
+  LOG(TRACE) << "Created WZ DMA input filter"; 
 }
 
 WZDmaInputFilter::~WZDmaInputFilter() {
   wz_stop_dma( &dma_ );
 	wz_close( &dma_ );
-  std::cerr << "Destroyed WZ DMA input filter\n";
+  LOG(TRACE) << "Destroyed WZ DMA input filter";
 }
 
 
@@ -44,10 +49,10 @@ inline ssize_t WZDmaInputFilter::read_packet_from_dma(char **buffer)
 
     if (bytes_read < 0) {
       stats.nbDmaErrors++;
-      tools::perror("#" + std::to_string( nbReads() ) + ": Read failed");
+      LOG(ERROR) << tools::strerror("#" + std::to_string( nbReads() ) + ": Read failed, returned: " + std::to_string(bytes_read));
 
       if (errno == EIO) {
-        std::cerr << "#" << nbReads() << ": Trying to restart DMA (attempt #" << tries << "): ";
+        LOG(ERROR) << "#" << nbReads() << ": Trying to restart DMA (attempt #" << tries << "):";
         wz_stop_dma( &dma_ );
         wz_close( &dma_ );
 
@@ -60,7 +65,7 @@ inline ssize_t WZDmaInputFilter::read_packet_from_dma(char **buffer)
           throw std::system_error(errno, std::system_category(), "Cannot start WZ DMA device");
         }
 
-        std::cerr << "Success.\n";
+        LOG(ERROR) << "Success.";
         tries++;
 
         if (tries == 10) {
@@ -93,34 +98,39 @@ inline ssize_t WZDmaInputFilter::read_packet( char **buffer, size_t bufferSize )
   while ( bytesRead > (ssize_t)bufferSize ) {
     stats.nbDmaOversizedPackets++;
     skip++;
-    std::cerr 
-      << "#" << nbReads() << ": ERROR: DMA read returned " << bytesRead << " > buffer size " << bufferSize
-      << ". Skipping packet #" << skip << ".\n";
-    if (skip > 100) {
+    LOG(ERROR)  
+      << "#" << nbReads() << ": DMA read returned " << bytesRead << " > buffer size " << bufferSize
+      << ". Skipping packet #" << skip << '.';
+    if (skip >= 100) {
       reset++;
       stats.nbBoardResets++;
 
       if (reset > 10) {
-        std::cerr << "Resets didn't help!\n";
+        LOG(ERROR) << "Resets didn't help!";
         throw std::runtime_error("FATAL: DMA is still returning large packets.");
       }
 
       // Oversized packet is usually sign of link problem
       // Let's try to reset the board
-      std::cerr << "Goging to reset the board: \n";
+      LOG(ERROR) << "Goging to reset the board:";
       if (wz_reset_board() < 0) {
-        std::cerr << "Reset finished\n";
+        LOG(ERROR) << "Reset finished";
       } else {
-        std::cerr << "Reset succesfull\n";
+        LOG(ERROR) << "Reset failed";
       }
 
-      std::cerr << "Waiting for 30 seconds to clear any collected crap: ";
+      LOG(ERROR) << "Waiting for 30 seconds to clear any collected crap:";
       // Sleep for 30 seconds (TCDS may be paused)
-      for (int i=0; i<30; i++) {
-        std::cout << '.' << std::flush;
+      for (int i=30; i>0; i--) {
+        if (i % 5 == 0) {
+          LOG(ERROR) << i << " seconds...";
+        }
         usleep(1000000);
       }
-      std::cerr << " OK\n";
+      LOG(ERROR) << " OK";
+
+      // Reset skipped packets counter
+      skip = 0;
     }
     bytesRead = read_packet_from_dma( buffer );
   }

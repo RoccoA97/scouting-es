@@ -33,17 +33,12 @@ const std::string strerror()
   return tools::strerror(errno);
 }
 
+/*
+ * A thread-safe version of "perror". Prepends a custom message before the error code and returns everything in std::string
+ */ 
 const std::string strerror(const std::string& msg)
 {
   return msg + ": " + tools::strerror();
-}
-
-/*
- * A thread-safe version of perror
- */ 
-void perror(const std::string& msg)
-{
-  std::cerr << tools::strerror(msg) << std::endl;
 }
 
 

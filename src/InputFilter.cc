@@ -1,11 +1,11 @@
 #include <cassert>
-#include <iostream>
 #include <iomanip>
 #include <system_error>
 
 #include "InputFilter.h"
 #include "slice.h"
 #include "controls.h"
+#include "log.h"
 
 InputFilter::InputFilter(size_t packetBufferSize, size_t nbPacketBuffers, ctrl& control) : 
     filter(serial_in_order),
@@ -16,14 +16,14 @@ InputFilter::InputFilter(size_t packetBufferSize, size_t nbPacketBuffers, ctrl& 
     previousNbBytesRead_(0),
     previousStartTime_( tbb::tick_count::now() )
 { 
-    std::cerr << "Created input filter and allocated at " << static_cast<void*>(nextSlice_) << "\n";
+    LOG(TRACE) << "Created input filter and allocated at " << static_cast<void*>(nextSlice_);
 }
 
 InputFilter::~InputFilter() {
-  std::cerr << "Destroy input filter and delete at " << static_cast<void*>(nextSlice_) << "\n";
+  LOG(TRACE) << "Destroy input filter and delete at " << static_cast<void*>(nextSlice_);
 
   Slice::giveAllocated(nextSlice_);
-  std::cerr << "Input operator performed " << nbReads_ << " read\n";
+  LOG(DEBUG) << "Input operator performed " << nbReads_ << " read";
 }
 
 
@@ -51,8 +51,7 @@ void InputFilter::printStats(std::ostream& out)
 	  out.copyfmt(state);
 
     // Print additional info
-    print( out );
-    out << '\n';     
+    print( out );     
 }
 
 
@@ -84,7 +83,9 @@ void* InputFilter::operator()(void*) {
 
   // Calculate some statistics
   if (control_.packets_per_report && (nbReads_ % control_.packets_per_report == 0)) {
-    printStats( std::cout );
+    std::ostringstream log;
+    printStats( log );
+    LOG(INFO) << log.str();
   }
 
   // Have more data to process.

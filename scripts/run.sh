@@ -12,7 +12,7 @@ echo 3 > /proc/sys/vm/drop_caches
 while true 
 do
     echo "Starting scdaq..."
-    ./scdaq
+    ./scdaq 2>&1 | logger --stderr --tag scdaq --id
     echo "Resetting the board..."
     ../scripts/reset-firmware.sh
     echo "Clearing caches..."
