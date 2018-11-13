@@ -58,6 +58,11 @@ private:
   // Snapshot of nbBytesRead_
   uint64_t previousNbBytesRead_;
 
+  ssize_t minBytesRead_;
+  ssize_t maxBytesRead_;
+
+  uint64_t previousNbReads_;
+
   // Remember timestamp for performance monitoring 
   tbb::tick_count previousStartTime_;
 };
