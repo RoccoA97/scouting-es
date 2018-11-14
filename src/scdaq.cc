@@ -106,7 +106,7 @@ int run_pipeline( int nthreads, ctrl& control, config *conf)
   std::string output_file_base = conf->getOutputFilenameBase();
 
   // Create file-writing stage and add it to the pipeline
-  OutputStream output_stream( output_file_base.c_str(), &control);
+  OutputStream output_stream( output_file_base.c_str(), control);
   pipeline.add_filter( output_stream );
 
   // Run the pipeline
@@ -144,7 +144,7 @@ int main( int argc, char* argv[] ) {
     control.packets_per_report = conf.getPacketsPerReport();
 
     boost::asio::io_service io_service;
-    server s(io_service, conf.getPortNumber(), &control);
+    server s(io_service, conf.getPortNumber(), control);
     boost::thread t(boost::bind(&boost::asio::io_service::run, &io_service));
 
     int p = conf.getNumThreads();

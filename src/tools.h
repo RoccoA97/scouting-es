@@ -14,7 +14,7 @@ namespace tools {
 /*
  * A thread-safe version of strerror: Returns a C++ std::string describing error_code
  */                     
-const std::string strerror(int error_code) 
+inline const std::string strerror(int error_code) 
 {               
   char local_buf[128];                                      
   char *buf = local_buf;                                    
@@ -28,7 +28,7 @@ const std::string strerror(int error_code)
 /*
  * A thread-safe version of strerror: Returns a C++ std::string describing ERRNO
  */ 
-const std::string strerror() 
+inline const std::string strerror() 
 {
   return tools::strerror(errno);
 }
@@ -36,7 +36,7 @@ const std::string strerror()
 /*
  * A thread-safe version of "perror". Prepends a custom message before the error code and returns everything in std::string
  */ 
-const std::string strerror(const std::string& msg)
+inline const std::string strerror(const std::string& msg)
 {
   return msg + ": " + tools::strerror();
 }

@@ -1,10 +1,11 @@
 #ifndef CONTROLS_H
 #define CONTROLS_H
 #include <stdint.h>
+#include <atomic>
 
-struct ctrl{
+struct ctrl {
   uint32_t run_number;
-  bool running;
+  std::atomic<bool> running;
   uint64_t max_file_size;
   int packets_per_report;
 };

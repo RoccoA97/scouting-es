@@ -8,7 +8,7 @@
 class server
 {
 public:
-  server(boost::asio::io_service& io_service, short port, ctrl *c)
+  server(boost::asio::io_service& io_service, short port, ctrl& c)
     : io_service_(io_service),
       acceptor_(io_service, tcp::endpoint(tcp::v4(), port)),
       control(c)
@@ -17,7 +17,7 @@ public:
   }
 
 private:
-  void start_accept(ctrl *c)
+  void start_accept(ctrl& c)
   {
     session* new_session = new session(io_service_,c);
     acceptor_.async_accept(new_session->socket(),
@@ -42,7 +42,7 @@ private:
 
   boost::asio::io_service& io_service_;
   tcp::acceptor acceptor_;
-  ctrl *control;
+  ctrl& control;
 };
 
 

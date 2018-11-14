@@ -1,5 +1,14 @@
 #! /usr/bin/python
 
+## ---- Configuration ----
+
+# Delay between two consecutive run control polls
+pollingDelay = 10
+
+# Acquire data in the following beam modes:
+allowedBeamModes = ['STABLE BEAMS', 'ADJUST']
+
+## -----------------------
 
 
 if __name__ == "__main__":
@@ -12,7 +21,6 @@ if __name__ == "__main__":
     import socket
     import sys
 
-    scouting_running = False
     current_run = 0;
     while True:
         data=json.loads(urllib2.urlopen("http://daq-expert.cms:8081/DAQSnapshotService/getsnapshot?setup=cdaq").read())
@@ -20,9 +28,10 @@ if __name__ == "__main__":
         beamMode = data['lhcBeamMode']
         daqState = data['daqState']
         print "daq state ",daqState," beamMode ",beamMode," runNumber ",runNumber
-        #if not scouting_running:
-	if True:
-            if beamMode=='STABLE BEAMS' and daqState=='Running':
+
+        if True:
+            # Check if LHC is running
+            if (beamMode in allowedBeamModes) and daqState=='Running':
                 print "going to start scouting for run ",runNumber
                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 server_address = ('localhost', 8000)
@@ -31,7 +40,7 @@ if __name__ == "__main__":
                     sock.connect(server_address)
                     message = "start "+str(runNumber)
                     sock.sendall(message)
-                    data = sock.recv(16)
+                    data = sock.recv(256)
                     print "server response ",data
                     if 'ok' in data:
                         current_run=runNumber
@@ -42,9 +51,9 @@ if __name__ == "__main__":
                 except:
                     print "error in connecting to scout daq"
 
-	if True:
-        #if scouting_running:
-            if beamMode!='STABLE BEAMS' or daqState != 'Running':
+        if True:
+            # Check if LHC is not running
+            if (beamMode not in allowedBeamModes) or daqState != 'Running':
                 print "going to stop scouting for run ", current_run
                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 server_address = ('localhost', 8000)
@@ -53,7 +62,7 @@ if __name__ == "__main__":
                     sock.connect(server_address)
                     message = "stop"
                     sock.sendall(message)
-                    data = sock.recv(16)
+                    data = sock.recv(256)
                     print "server response ",data
                     if 'ok' in data:
                         print "stopped run ",current_run
@@ -64,4 +73,4 @@ if __name__ == "__main__":
                 except:
                     print "error in connecting to scout daq"
 
-        time.sleep(30)
+        time.sleep(pollingDelay)

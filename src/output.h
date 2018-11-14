@@ -13,16 +13,19 @@ class OutputStream: public tbb::filter {
 
 
 public:
-  OutputStream( const char*, ctrl *c );
+  OutputStream( const char* output_file_base, ctrl& c );
   void* operator()( void* item ) /*override*/;
 
 private:
   void open_next_file();
+  void close_and_move_current_file();
+
+private:
   std::string my_output_file_base;
   uint32_t totcounts;
   uint64_t current_file_size;
   int32_t file_count;
-  ctrl *control;
+  ctrl& control;
   FILE *current_file;
   uint32_t current_run_number;
   std::string journal_name;
