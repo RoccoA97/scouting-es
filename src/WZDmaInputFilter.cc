@@ -150,8 +150,8 @@ void WZDmaInputFilter::print(std::ostream& out) const
 {
     out 
       << ", DMA errors " << stats.nbDmaErrors
-      << ", DMA oversized packets " << stats.nbDmaOversizedPackets
-      << ", board resets " << stats.nbBoardResets;
+      << ", oversized " << stats.nbDmaOversizedPackets
+      << ", resets " << stats.nbBoardResets;
 }
 
 

@@ -55,7 +55,7 @@ void InputFilter::printStats(std::ostream& out)
 	  state.copyfmt(out);
 
     out 
-      << "#" << nbReads_ << ": Read bandwidth " << std::fixed << std::setprecision(1) << bwd << " MBytes/sec, " 
+      << "#" << nbReads_ << ": Reading " << std::fixed << std::setprecision(1) << bwd << " MB/sec, " 
       << nbReadsDiff << " packet(s) min/avg/max " << minBytesRead_ <<  '/' << avgBytesRead << '/' << maxBytesRead_;
       
 	  // Restore formatting
