@@ -13,6 +13,10 @@
 
 //#include <boost/log/trivial.hpp>
 
+
+// Uncomment to include a thread ID in the log message 
+//#define LOG_THREAD_ID
+
 enum LOG_LEVEL {
     TRACE,
     DEBUG,
@@ -65,8 +69,12 @@ inline std::string simplify_pretty(const char *fname)
 
 //#define LOG(severity)   ( tools::log::debug() << "[0x" << std::hex << std::this_thread::get_id() << std::dec << "] " << severity << " [" TOOLS_DEBUG_INFO ", " << __PRETTY_FUNCTION__ << "]: " ) 
 //#define LOG(severity)   ( tools::log::log() << "[0x" << std::hex << std::this_thread::get_id() << std::dec << "] " << severity << __func__ << ": " ) 
-#define LOG(severity)   ( tools::log::log() << "[0x" << std::hex << std::this_thread::get_id() << std::dec << "] " << severity << simplify_pretty(__PRETTY_FUNCTION__) << ": " ) 
 
+#ifdef LOG_THREAD_ID
+    #define LOG(severity)   ( tools::log::log() << "[0x" << std::hex << std::this_thread::get_id() << std::dec << "] " << severity << simplify_pretty(__PRETTY_FUNCTION__) << ": " ) 
+#else
+    #define LOG(severity)   ( tools::log::log() << severity << simplify_pretty(__PRETTY_FUNCTION__) << ": " ) 
+#endif
 
 namespace tools {
 namespace log {
