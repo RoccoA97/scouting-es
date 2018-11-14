@@ -4,9 +4,9 @@
 #include "output.h"
 #include "slice.h"
 #include "log.h"
+#include "tools.h"
 
-
-OutputStream::OutputStream( const char* output_file_base, ctrl *c) : 
+OutputStream::OutputStream( const char* output_file_base, ctrl& c) : 
     tbb::filter(serial_in_order),
     my_output_file_base(output_file_base),
     totcounts(0),
@@ -35,7 +35,7 @@ static void update_journal(std::string journal_name, uint32_t run_number, uint32
 
   // Replace the old journal
   if (rename(new_journal_name.c_str(), journal_name.c_str()) < 0 ) {
-    perror("Journal file move failed");
+    LOG(ERROR) << tools::strerror("Journal file move failed");
   }
 }
 
@@ -50,71 +50,85 @@ static bool read_journal(std::string journal_name, uint32_t& run_number, uint32_
     return false;
 }
 
-void* OutputStream::operator()( void* item ) {
+void* OutputStream::operator()( void* item ) 
+{
     Slice& out = *static_cast<Slice*>(item);
     totcounts += out.get_counts();
-    if(control->running){
-      if(current_file==0 || current_file_size > control->max_file_size) open_next_file();
+
+    if ( control.running.load(std::memory_order_acquire) ) {
+      if (current_file == NULL || current_file_size > control.max_file_size || current_run_number != control.run_number) {
+        open_next_file();
+      }
       
       size_t n = fwrite( out.begin(), 1, out.size(), current_file );
-      current_file_size+=n;      
-      if( n!=out.size() ) {
-        fprintf(stderr,"Can't write into output file \n");
+      current_file_size += n;      
+      if ( n != out.size() ) {
+        LOG(ERROR) << "Can't write into output file: Have to write " << out.size() << ", but write returned " << n;
       }
     }
-    if(!control->running && current_file!=0){
-      fclose(current_file);
-      current_file=0;
-      file_count = 0;
-      current_run_number = 0;
+
+    // If not running and we have a file then close it
+    if (!control.running && current_file != NULL) {
+      close_and_move_current_file();
+      file_count = -1;
     }
+
     out.free();
     return NULL;
 }
 
-void OutputStream::open_next_file(){
-
-  // Close and move open file
+void OutputStream::close_and_move_current_file()
+{
+  // Close and move current file
   if (current_file) {
     fclose(current_file);
+    current_file = NULL;
 
     // Move the file, so it can be processes by file move daemon
     char source_file_name[256];
     char target_file_name[256];
     // TODO: Check if the destination directory exists
-    sprintf(source_file_name,"%s/in_progress/scout_%06d_%06d.dat",my_output_file_base.c_str(),current_run_number,file_count);
-    sprintf(target_file_name,"%s/scout_%06d_%06d.dat",my_output_file_base.c_str(),current_run_number,file_count);
+    sprintf(source_file_name,"%s/in_progress/scout_%06d_%06d.dat", my_output_file_base.c_str(), current_run_number, file_count);
+    sprintf(target_file_name,"%s/scout_%06d_%06d.dat", my_output_file_base.c_str(), current_run_number, file_count);
 
-    fprintf(stderr, "rename: %s to %s\n", source_file_name, target_file_name);
+    LOG(INFO) << "rename: " << source_file_name << " to " << target_file_name;
     if ( rename(source_file_name, target_file_name) < 0 ) {
-      perror("File rename failed");
+      LOG(ERROR) << tools::strerror("File rename failed");
     }
 
-    current_file_size=0; 
+    current_file_size = 0; 
     file_count += 1;
   }
+}
+
+void OutputStream::open_next_file() 
+{
+  close_and_move_current_file();
 
   // We can change current_run_number only here, after the (previous) file was closed and moved
-  current_run_number = control->run_number;
+  if (current_run_number != control.run_number) {
+    current_run_number = control.run_number;
+    file_count = -1;
+  }
 
-  // If this is the first file check if we have a journal file
+  // If this is the first file then check if we have a journal file
   if (file_count < 0) {
     // Set default file index
     file_count = 0;
 
-    uint32_t run_number;
+    uint32_t journal_run_number;
     uint32_t index;
 
-    if (read_journal(journal_name, run_number, index)) {
+    if (read_journal(journal_name, journal_run_number, index)) {
       LOG(INFO) << "We have journal:";
-      LOG(INFO) << "  run_number: " << run_number;
+      LOG(INFO) << "  run_number: " << journal_run_number;
       LOG(INFO) << "  index:      " << index;   
     } else {
       LOG(INFO) << "No journal file.\n";
     }
 
     LOG(INFO) << "Current run_number: " << current_run_number;
-    if (current_run_number == run_number) {
+    if (current_run_number == journal_run_number) {
       file_count = index;
     }
     LOG(INFO) << "  using index:      " << file_count;    

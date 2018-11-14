@@ -28,7 +28,7 @@ using boost::asio::ip::tcp;
 class session
 {
 public:
-  session(boost::asio::io_service& io_service, ctrl *c)
+  session(boost::asio::io_service& io_service, ctrl& c)
     : socket_(io_service),
       control(c)
   {
@@ -48,6 +48,9 @@ public:
   }
 
 private:
+
+#define RCINFO(msg) msg ", run_number: %u, running: %s", control.run_number, (control.running ? "true" : "false")
+
   int process_command(std::string_view input, char *output, size_t size)
   {
     try {
@@ -65,23 +68,23 @@ private:
         }
         uint32_t run_number = std::stoul( items[1] );
 
-        if ( !control->running ) {
-          control->run_number = run_number;
-          control->running = true;
-          return snprintf(output, size, "ok");
+        if ( !control.running || control.run_number != run_number ) {
+          control.run_number = run_number;
+          control.running.store(true, std::memory_order_release);
+          return snprintf(output, size, RCINFO("ok"));
 
         } else {
-          return snprintf(output, size, "ignored");
+          return snprintf(output, size, RCINFO("ignored"));
         }
 
       } else if ( command == "stop") {
         
-        if ( control->running ) {
-          control->running = false;
-          return snprintf(output, size, "ok");
+        if ( control.running ) {
+          control.running.store(false, std::memory_order_relaxed);
+          return snprintf(output, size, RCINFO("ok"));
 
         } else {
-          return snprintf(output, size, "ignored");
+          return snprintf(output, size, RCINFO("ignored"));
         }
 
       } else {
@@ -138,7 +141,7 @@ private:
   tcp::socket socket_;
   enum { max_length = 1024 };
   char data_[max_length];
-  ctrl *control;
+  ctrl& control;
   static const std::string reply_success;
   static const std::string reply_failure;
 };
