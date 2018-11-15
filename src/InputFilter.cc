@@ -70,6 +70,53 @@ void InputFilter::printStats(std::ostream& out)
 }
 
 
+/*
+ * This function is a HACK. It should not be here!
+ * It should be a part of processor. Puting it here
+ * is a quick and dirty solution for debugging.
+ * TODO: Fixme!
+ */
+void dumpPacketTrailer(char *buffer, size_t size, std::ostream& out)
+{
+  // If a packet doesn't have a proper trailer, we cannot check
+  if (size < 32) {
+    return;
+  }
+
+  // Get to the trailer
+  buffer += size - 32;
+
+  // Save formatting
+  std::ios state(nullptr);
+  state.copyfmt(out);
+
+  uint64_t deadbeef = *reinterpret_cast<uint64_t *>( buffer ); 
+  uint64_t autorealignCounter = *reinterpret_cast<uint64_t *>( buffer + 8 );
+  uint64_t droppedOrbitCounter = *reinterpret_cast<uint64_t *>( buffer + 2*8 );
+  uint64_t orbitCounter = *reinterpret_cast<uint64_t *>( buffer + 3*8 );
+
+  if (deadbeef == 0xdeadbeefdeadbeef) {
+    out 
+      << ", HW: autorealign " << autorealignCounter
+      << " orbits " << orbitCounter
+      << " dropped " <<  droppedOrbitCounter;
+
+  } else {
+    out << ", HW trailer: " << std::hex;
+    for (int i = 0; i < 32; i++) {
+      unsigned int val = (uint8_t)(buffer[i]);
+      out << std::setw(2) << std::setfill('0') << val;
+      i++;
+      val = (uint8_t)(buffer[i]);
+      out << std::setw(2) << std::setfill('0') << val << ' ';
+    }
+  }
+
+  // Restore formatting
+  out.copyfmt(state);
+}
+
+
 void* InputFilter::operator()(void*) {
   // Prepare destination buffer
   char *buffer = nextSlice_->begin();
@@ -105,6 +152,8 @@ void* InputFilter::operator()(void*) {
   if (control_.packets_per_report && (nbReads_ % control_.packets_per_report == 0)) {
     std::ostringstream log;
     printStats( log );
+    // HACK: This function is not supposed to be called from here
+    dumpPacketTrailer( nextSlice_->begin(), bytesRead, log );
     LOG(INFO) << log.str();
   }
 
