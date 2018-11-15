@@ -8,8 +8,12 @@
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
+#include <errno.h>
 
 #include "wz_dma.h"
+
+// perror may modify errno, we have to save it
+#define PERROR(msg) do { int err = errno; perror(msg); errno = err; } while (0)
 
 /* Open necessary devices and map DMAable memory */
 int wz_init(struct wz_private* wz) 
@@ -22,35 +26,37 @@ int wz_init(struct wz_private* wz)
 	wz->usr_regs = NULL;
 	wz->data_buf = NULL;
 
+	//int err = 0;
+
 	if ( (wz->fd_user = open("/dev/wz-xdma0_user", O_RDWR)) < 0 ) {
-		perror("Can't open /dev/wz-xdma0_user");
+		PERROR("Can't open /dev/wz-xdma0_user");
 		return -1;
 	};
 
 	if ( (wz->fd_control = open("/dev/wz-xdma0_control", O_RDWR)) < 0 ) {
-		perror("Can't open /dev/wz-xdma0_control");
+		PERROR("Can't open /dev/wz-xdma0_control");
 		return -1;
 	};
 
 	if ( (wz->fd_memory = open("/dev/wz-xdma0_c2h_0", O_RDWR)) < 0 ) {
-		perror("Can't open /dev/wz-xdma0_c2h_0");
+		PERROR("Can't open /dev/wz-xdma0_c2h_0");
 		return -1;
 	};
 
 	//Allocate buffers
 	if ( (res = ioctl(wz->fd_memory, IOCTL_XDMA_WZ_ALLOC_BUFFERS, 0L)) < 0 ) {
-		perror("Can't mmap DMA buffers");
+		PERROR("Can't mmap DMA buffers");
 		return -1;
 	}
 
 	//Now mmap the user registers
 	if ( (wz->usr_regs = (volatile uint32_t *) mmap(NULL, 1024*1024, PROT_READ | PROT_WRITE, MAP_SHARED, wz->fd_user, 0)) == MAP_FAILED) {
-		perror("Can't mmap user registers");
+		PERROR("Can't mmap user registers");
 		return -1;	
 	}
 
 	if ( (wz->data_buf = (volatile char *) mmap(NULL, TOT_BUF_LEN, PROT_READ|PROT_WRITE, MAP_SHARED, wz->fd_memory, 0)) == MAP_FAILED) { 
-		perror("Can't mmap data buffer");
+		PERROR("Can't mmap data buffer");
 		return -1;
 	}
 
@@ -171,23 +177,23 @@ int wz_reset_board()
     printf("Server IP:  %s\n", inet_ntoa(saddr_in.sin_addr));
 
     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-        perror("Socket");
+        PERROR("Socket");
         return -1;
     }
 
     // Connect socket to the server
     if (connect(sock, (struct sockaddr *) &saddr_in, sizeof(struct sockaddr_in)) < 0) {
-        perror("Connect");
+        PERROR("Connect");
         goto error;
     }
 
     if (send(sock, "reset\n", 6, 0) < 0) {
-        perror("Send");
+        PERROR("Send");
         goto error;
     }
 
     if ((bytes_read = recv(sock, buf, sizeof(buf) - 1, 0)) < 0) {
-        perror("Recv");
+        PERROR("Recv");
         goto error;
     }
 
