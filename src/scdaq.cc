@@ -39,12 +39,12 @@ using namespace std;
 
 bool silent = false;
 
-int run_pipeline( int nthreads, ctrl& control, config *conf)
+int run_pipeline( int nbThreads, ctrl& control, config& conf )
 {
-  config::InputType input = conf->getInput();
+  config::InputType input = conf.getInput();
 
-  size_t MAX_BYTES_PER_INPUT_SLICE = conf->getDmaPacketBufferSize();
-  size_t TOTAL_SLICES = conf->getNumberOfDmaPacketBuffers();
+  size_t MAX_BYTES_PER_INPUT_SLICE = conf.getDmaPacketBufferSize();
+  size_t TOTAL_SLICES = conf.getNumberOfDmaPacketBuffers();
 
   // Create empty input reader, will assing later when we know what is the data source 
   std::shared_ptr<InputFilter> input_filter;
@@ -54,20 +54,20 @@ int run_pipeline( int nthreads, ctrl& control, config *conf)
 
   if (input == config::InputType::FILE) {
       // Create file-reading writing stage and add it to the pipeline
-      MAX_BYTES_PER_INPUT_SLICE = 192*conf->getBlocksPerInputBuffer();
-      TOTAL_SLICES = conf->getNumInputBuffers();
+      MAX_BYTES_PER_INPUT_SLICE = 192*conf.getBlocksPerInputBuffer();
+      TOTAL_SLICES = conf.getNumInputBuffers();
       
-      //input_filter = std::make_shared<FileInputFilter>( conf->getInputFile(), MAX_BYTES_PER_INPUT_SLICE, TOTAL_SLICES );
+      //input_filter = std::make_shared<FileInputFilter>( conf.getInputFile(), MAX_BYTES_PER_INPUT_SLICE, TOTAL_SLICES );
       throw std::runtime_error("input type FILE is temporarily not supported");
 
   } else if (input == config::InputType::DMA) {
       // Create DMA reader
-      //input_filter = std::make_shared<DmaInputFilter>( conf->getDmaDevice(), MAX_BYTES_PER_INPUT_SLICE, TOTAL_SLICES );
+      //input_filter = std::make_shared<DmaInputFilter>( conf.getDmaDevice(), MAX_BYTES_PER_INPUT_SLICE, TOTAL_SLICES );
       throw std::runtime_error("input type DMA is temporarily not supported");
 
   } else if (input == config::InputType::FILEDMA) {
       // Create FILE DMA reader
-      input_filter = std::make_shared<FileDmaInputFilter>( conf->getInputFile(), MAX_BYTES_PER_INPUT_SLICE, TOTAL_SLICES, control );
+      input_filter = std::make_shared<FileDmaInputFilter>( conf.getInputFile(), MAX_BYTES_PER_INPUT_SLICE, TOTAL_SLICES, control );
 
   } else if (input == config::InputType::WZDMA ) {
       // Create WZ DMA reader
@@ -87,23 +87,23 @@ int run_pipeline( int nthreads, ctrl& control, config *conf)
   // Create reformatter and add it to the pipeline
   // TODO: Created here so we are not subject of scoping, fix later...
   StreamProcessor stream_processor(MAX_BYTES_PER_INPUT_SLICE); 
-  if ( conf->getEnableStreamProcessor() ) {
+  if ( conf.getEnableStreamProcessor() ) {
     pipeline.add_filter( stream_processor );
   }
 
   // Create elastic populator (if requested)
-  std::string url = conf->getElasticUrl();
+  std::string url = conf.getElasticUrl();
   // TODO: Created here so we are not subject of scoping, fix later...
   ElasticProcessor elastic_processor(MAX_BYTES_PER_INPUT_SLICE,
               &control,
               url,
-              conf->getPtCut(),
-              conf->getQualCut());
-  if ( conf->getEnableElasticProcessor() ) {
+              conf.getPtCut(),
+              conf.getQualCut());
+  if ( conf.getEnableElasticProcessor() ) {
     pipeline.add_filter(elastic_processor);
   }
 
-  std::string output_file_base = conf->getOutputFilenameBase();
+  std::string output_file_base = conf.getOutputFilenameBase();
 
   // Create file-writing stage and add it to the pipeline
   OutputStream output_stream( output_file_base.c_str(), control);
@@ -113,7 +113,7 @@ int run_pipeline( int nthreads, ctrl& control, config *conf)
   tbb::tick_count t0 = tbb::tick_count::now();
   // Need more than one token in flight per thread to keep all threads 
   // busy; 2-4 works
-  pipeline.run( nthreads*4 );
+  pipeline.run( nbThreads * 4 );
   tbb::tick_count t1 = tbb::tick_count::now();
 
   if ( !silent ) {
@@ -147,9 +147,10 @@ int main( int argc, char* argv[] ) {
     server s(io_service, conf.getPortNumber(), control);
     boost::thread t(boost::bind(&boost::asio::io_service::run, &io_service));
 
-    int p = conf.getNumThreads();
-    tbb::task_scheduler_init init(p);
-    if(!run_pipeline (p, control, &conf))
+    int nbThreads = conf.getNumThreads();
+
+    tbb::task_scheduler_init init( nbThreads );
+    if (!run_pipeline (nbThreads, control, conf))
       return 1;
 
     //    utility::report_elapsed_time((tbb::tick_count::now() - mainStartTime).seconds());
