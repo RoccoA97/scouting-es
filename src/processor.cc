@@ -43,13 +43,20 @@ Slice* StreamProcessor::process(Slice& input, Slice& out)
     bool BblocksOn[8];
 
     for(unsigned int i = 0; i < 8; i++){
-      uint32_t bx = bl->bx[i];
-      if(bx==constants::deadbeef){
+      if(bl->bx[i]==constants::deadbeef){
 	p += constants::orbit_trailer_size;
 	endoforbit = true;
 	break;
       }
-      bxmatch += (bx==bl->bx[0])<<i;
+      uint32_t bx = (bl->bx[i] >> shifts::bx) & masks::bx;
+      uint32_t interm = (bl->bx[i] >> shifts::interm) & masks::interm;
+      bl->mu1f[i] |= interm == constants::intermediate_marker ?
+	(constants::intermediate & masks::interm)<<shifts::interm :
+	(constants::final        & masks::interm)<<shifts::interm;
+      bl->mu2f[i] |= interm == constants::intermediate_marker ?
+	(constants::intermediate & masks::interm)<<shifts::interm :
+	(constants::final        & masks::interm)<<shifts::interm;
+      bxmatch += (bx==((bl->bx[0] >> shifts::bx) & masks::bx))<<i;
       uint32_t orbit = bl->orbit[i];
       orbitmatch += (orbit==bl->orbit[0])<<i;
       uint32_t pt = (bl->mu1f[i] >> shifts::pt) & masks::pt;
@@ -95,16 +102,6 @@ Slice* StreamProcessor::process(Slice& input, Slice& out)
   }
 
 
-    //here do the processing 
-    // for(;;) {
-    //     if( p==input.end() ) 
-    //         break;
-    //     // Note: no overflow checking is needed here, as we have twice the 
-    //     // input string length, but the square of a non-negative integer n 
-    //     // cannot have more than twice as many digits as n.
-    //     m(q,"%ld",y);
-    //     q = strchr(q,0);
-    // }
     out.set_end(q);
     out.set_counts(counts);
     return &out;  
