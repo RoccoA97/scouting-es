@@ -31,7 +31,7 @@ struct masks{
   static constexpr  uint32_t interm  = 0x000f;
   static constexpr  uint32_t linkid  = 0x000f;
   //masks for muon 64 bits
-  static constexpr  uint32_t phiext  = 0x01ff;
+  static constexpr  uint32_t phiext  = 0x03ff;
   static constexpr  uint32_t pt      = 0x01ff;
   static constexpr  uint32_t qual    = 0x000f;
   static constexpr  uint32_t etaext  = 0x01ff;
