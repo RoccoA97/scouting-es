@@ -8,6 +8,9 @@
 #include <cstring>
 #include <iostream>
 
+#include <sys/stat.h>
+#include <limits.h>
+
 namespace tools {
 
 
@@ -42,6 +45,43 @@ inline const std::string strerror(const std::string& msg)
 }
 
 
+/*
+ * Various filesystem related utilities (will be removed once moved to C++17, or rewritten with boost)
+ */
+namespace filesystem {
+
+/*
+ * Create the target directory and any parent directories if necessary
+ */
+inline bool create_directories(std::string& path)
+{
+  char tmp[PATH_MAX];
+
+  // Add terminating '/' and make a writtable copy;
+  int len = snprintf(tmp, sizeof(tmp), "%s/", path.c_str());
+  if (len > PATH_MAX) len = PATH_MAX;
+
+  char *last_backslash = tmp;
+  for (char *p = tmp; *p; p++) {
+    if (*p == '/') {
+      // Found a new directory, ignore any subsequent back slashes
+      int dir_len = p - last_backslash - 1;
+      if (dir_len > 0) {
+        *p = 0;
+        if (mkdir(tmp, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) < 0 && (errno != EEXIST)) {
+          return false;
+        }
+        *p = '/';
+      }
+      last_backslash = p;
+    }
+  }
+
+  return true;
+}
+
+
+} // namespace filesystem
 } // namespace tools
 
 
