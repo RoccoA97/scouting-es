@@ -63,6 +63,7 @@ public:
     std::string v = vmap.at("pt_cut");
     return boost::lexical_cast<uint32_t>(v.c_str());
   }
+
   const std::string& getOutputFilenameBase() const 
   {
     return vmap.at("output_filename_base");
@@ -71,6 +72,10 @@ public:
     std::string v = vmap.at("max_file_size");
     return boost::lexical_cast<uint64_t>(v.c_str());
   }
+  bool getOutputForceWrite() const {
+    return (true ? vmap.at("output_force_write") == "yes" : false);
+  }
+
   uint32_t getNumThreads() const {
     std::string v = vmap.at("threads");
     return boost::lexical_cast<uint32_t>(v.c_str());
