@@ -23,13 +23,15 @@ static void create_output_directory(std::string& output_directory)
           LOG(TRACE) << "Output directory is already existing: " << output_directory << "'.";    
           return;
       }
-      LOG(ERROR) << "ERROR The output directory path '" << output_directory << "' is existing, but the path is not a directory!";
-      throw std::runtime_error("ERROR when creating the output directory.");
+      std::string err = "ERROR The output directory path '" + output_directory + "' is existing, but the path is not a directory!";
+      LOG(ERROR) << err;
+      throw std::runtime_error(err);
   }
 
   if (!tools::filesystem::create_directories(output_directory)) {
-    LOG(ERROR) << "ERROR when creating the output directory: '" << output_directory << "'.";
-    throw std::system_error(errno, std::system_category(), "Directory create error");
+    std::string err = tools::strerror("ERROR when creating the output directory '" + output_directory + "'");
+    LOG(ERROR) << err;
+    throw std::runtime_error(err);
   }
   LOG(TRACE) << "Created output directory: " << output_directory << "'.";    
 }
@@ -182,8 +184,9 @@ void OutputStream::open_next_file()
   std::string current_filename = output_directory + "/" + format_run_file_stem(current_run_number, file_count);
   current_file = fopen( current_filename.c_str(), "w" );
   if (current_file == NULL) {
-    LOG(ERROR) << "ERROR when creating file: '" << current_filename << "'";
-    throw std::system_error(errno, std::system_category(), "File open error");
+    std::string err = tools::strerror("ERROR when creating file '" + current_filename + "'");
+    LOG(ERROR) << err;
+    throw std::runtime_error(err);
   }
 
   // Update journal file (with the next index file)
