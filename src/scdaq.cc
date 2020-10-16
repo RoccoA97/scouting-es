@@ -142,6 +142,7 @@ int main( int argc, char* argv[] ) {
     control.run_number = 0;
     control.max_file_size = conf.getOutputMaxFileSize();//in Bytes
     control.packets_per_report = conf.getPacketsPerReport();
+    control.output_force_write = conf.getOutputForceWrite();
 
     boost::asio::io_service io_service;
     server s(io_service, conf.getPortNumber(), control);

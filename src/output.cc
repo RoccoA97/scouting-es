@@ -6,6 +6,36 @@
 #include "log.h"
 #include "tools.h"
 
+/* Defines the journal file */
+static const std::string journal_file { "index.journal" };
+
+/* Defined where are the files stored before they are moved to the final destination */
+static const std::string working_dir { "in_progress" };
+
+static void create_output_directory(std::string& output_directory)
+{
+  struct stat sb;
+
+  /* check if path exists and is a directory */
+  if (stat(output_directory.c_str(), &sb) == 0) {
+      if (S_ISDIR (sb.st_mode)) {
+          // Is already existing
+          LOG(TRACE) << "Output directory is already existing: " << output_directory << "'.";    
+          return;
+      }
+      std::string err = "ERROR The output directory path '" + output_directory + "' is existing, but the path is not a directory!";
+      LOG(ERROR) << err;
+      throw std::runtime_error(err);
+  }
+
+  if (!tools::filesystem::create_directories(output_directory)) {
+    std::string err = tools::strerror("ERROR when creating the output directory '" + output_directory + "'");
+    LOG(ERROR) << err;
+    throw std::runtime_error(err);
+  }
+  LOG(TRACE) << "Created output directory: " << output_directory << "'.";    
+}
+
 OutputStream::OutputStream( const char* output_file_base, ctrl& c) : 
     tbb::filter(serial_in_order),
     my_output_file_base(output_file_base),
@@ -15,9 +45,13 @@ OutputStream::OutputStream( const char* output_file_base, ctrl& c) :
     control(c),
     current_file(0),
     current_run_number(0),
-    journal_name(my_output_file_base + "/" + "index.journal")
+    journal_name(my_output_file_base + "/" + journal_file)
 {
   LOG(TRACE) << "Created output filter at " << static_cast<void*>(this);
+
+  // Create the ouput directory
+  std::string output_directory = my_output_file_base + "/" + working_dir;
+  create_output_directory(output_directory);
 }
 
 static void update_journal(std::string journal_name, uint32_t run_number, uint32_t index)
@@ -55,7 +89,7 @@ void* OutputStream::operator()( void* item )
     Slice& out = *static_cast<Slice*>(item);
     totcounts += out.get_counts();
 
-    if ( control.running.load(std::memory_order_acquire) ) {
+    if ( control.running.load(std::memory_order_acquire) || control.output_force_write ) {
       if (current_file == NULL || current_file_size > control.max_file_size || current_run_number != control.run_number) {
         open_next_file();
       }
@@ -68,13 +102,24 @@ void* OutputStream::operator()( void* item )
     }
 
     // If not running and we have a file then close it
-    if (!control.running && current_file != NULL) {
+    if ( !control.running && current_file != NULL && !control.output_force_write ) {
       close_and_move_current_file();
       file_count = -1;
     }
 
     out.free();
     return NULL;
+}
+
+/*
+ * Create a properly formated file name
+ * TODO: Change to C++
+ */
+static std::string format_run_file_stem(uint32_t run_number, int32_t file_count)
+{
+  char run_order_stem[PATH_MAX];
+  snprintf(run_order_stem, sizeof(run_order_stem), "scout_%06d_%06d.dat", run_number, file_count);
+  return std::string(run_order_stem);
 }
 
 void OutputStream::close_and_move_current_file()
@@ -84,15 +129,12 @@ void OutputStream::close_and_move_current_file()
     fclose(current_file);
     current_file = NULL;
 
-    // Move the file, so it can be processes by file move daemon
-    char source_file_name[256];
-    char target_file_name[256];
-    // TODO: Check if the destination directory exists
-    sprintf(source_file_name,"%s/in_progress/scout_%06d_%06d.dat", my_output_file_base.c_str(), current_run_number, file_count);
-    sprintf(target_file_name,"%s/scout_%06d_%06d.dat", my_output_file_base.c_str(), current_run_number, file_count);
+    std::string run_file          = format_run_file_stem(current_run_number, file_count);
+    std::string current_file_name = my_output_file_base + "/" + working_dir + "/" + run_file;
+    std::string target_file_name  = my_output_file_base + "/" + run_file;
 
-    LOG(INFO) << "rename: " << source_file_name << " to " << target_file_name;
-    if ( rename(source_file_name, target_file_name) < 0 ) {
+    LOG(INFO) << "rename: " << current_file_name << " to " << target_file_name;
+    if ( rename(current_file_name.c_str(), target_file_name.c_str()) < 0 ) {
       LOG(ERROR) << tools::strerror("File rename failed");
     }
 
@@ -134,15 +176,17 @@ void OutputStream::open_next_file()
     LOG(INFO) << "  using index:      " << file_count;    
   }
 
+  // Create the ouput directory
+  std::string output_directory = my_output_file_base + "/" + working_dir;
+  create_output_directory(output_directory);
+
   // Create a new file
-  char run_order_stem[256];
-  // TODO: Check if the destination directory exists
-  sprintf(run_order_stem,"/in_progress/scout_%06d_%06d.dat",current_run_number,file_count);
-  std::string file_end(run_order_stem);
-  std::string filename = my_output_file_base+file_end;
-  current_file = fopen( filename.c_str(), "w" );
+  std::string current_filename = output_directory + "/" + format_run_file_stem(current_run_number, file_count);
+  current_file = fopen( current_filename.c_str(), "w" );
   if (current_file == NULL) {
-    throw std::system_error(errno, std::system_category(), "File open error");
+    std::string err = tools::strerror("ERROR when creating file '" + current_filename + "'");
+    LOG(ERROR) << err;
+    throw std::runtime_error(err);
   }
 
   // Update journal file (with the next index file)
