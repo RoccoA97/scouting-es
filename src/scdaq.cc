@@ -86,7 +86,7 @@ int run_pipeline( int nbThreads, ctrl& control, config& conf )
 
   // Create reformatter and add it to the pipeline
   // TODO: Created here so we are not subject of scoping, fix later...
-  StreamProcessor stream_processor(MAX_BYTES_PER_INPUT_SLICE); 
+  StreamProcessor stream_processor(MAX_BYTES_PER_INPUT_SLICE, conf.getDoZS()); 
   if ( conf.getEnableStreamProcessor() ) {
     pipeline.add_filter( stream_processor );
   }
