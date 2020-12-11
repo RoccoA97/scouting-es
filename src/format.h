@@ -5,8 +5,8 @@
 #include <math.h>
 
 struct block1{
-  uint32_t bx[8];
   uint32_t orbit[8];
+  uint32_t bx[8];
   uint32_t mu1f[8];
   uint32_t mu1s[8];
   uint32_t mu2f[8];
@@ -19,12 +19,13 @@ struct muon{
 };
 
 struct block{
-  uint32_t bx;
   uint32_t orbit;
+  uint32_t bx;
   muon mu[16];
 };
 
-struct masks{
+//original format
+/*struct masks{
   //bx word: 16 bits used for actual bx, MS 4 bits are muon type 
   //(0xf intermediate, 0x0 final, following 4 bits for link id)
   static constexpr  uint32_t bx      = 0xffff;
@@ -48,14 +49,43 @@ struct masks{
   //NOTA BENE: reserved two bits are used for muon id
   //0x1==intermediate, 0x2==final
   static constexpr  uint32_t rsv     = 0x0003;
+};*/
+
+//run3 format --tj
+struct masks{
+  //bx word: 16 bits used for actual bx, MS 4 bits are muon type 
+  //(0xf intermediate, 0x0 final, following 4 bits for link id)
+  static constexpr  uint32_t bx      = 0x1fff;
+  static constexpr  uint32_t interm  = 0x0001;
+  //masks for muon 64 bits
+  static constexpr  uint32_t phiext  = 0x03ff;
+  static constexpr  uint32_t pt      = 0x01ff;
+  static constexpr  uint32_t ptuncon = 0x00ff; //--8bits
+  static constexpr  uint32_t qual    = 0x000f;
+  static constexpr  uint32_t etaext  = 0x01ff;
+  static constexpr  uint32_t etaextv = 0x00ff;
+  static constexpr  uint32_t etaexts = 0x0100;
+  static constexpr  uint32_t iso     = 0x0003;
+  static constexpr  uint32_t chrg    = 0x0001;
+  static constexpr  uint32_t chrgv   = 0x0001;
+  static constexpr  uint32_t index   = 0x007f;
+  static constexpr  uint32_t phi     = 0x03ff;
+  static constexpr  uint32_t eta     = 0x01ff;
+  static constexpr  uint32_t etav    = 0x00ff;
+  static constexpr  uint32_t etas    = 0x0100;
+  static constexpr  uint32_t impact  = 0x0003;
+  
+  //NOTA BENE: reserved two bits are used for muon id
+  //0x1==intermediate, 0x2==final
+//  static constexpr  uint32_t rsv     = 0x0003;//-- no longer anything reserved
 };
 
 struct shifts{
   //bx word: 16 bits used for actual bx, MS 4 bits are muon type 
   //(0xf intermediate, 0x0 final, following 4 bits for link id)
   static constexpr  uint32_t bx      = 0;
-  static constexpr  uint32_t interm  = 27;
-  static constexpr  uint32_t linkid  = 23;
+  static constexpr  uint32_t interm  = 31; //updated for new run3 format //tj
+  //static constexpr  uint32_t linkid  = 23; //no longer exists in data format //tj
   //shifts for muon 64 bits
   static constexpr  uint32_t  phiext =  0;
   static constexpr  uint32_t  pt     = 10;
@@ -66,8 +96,9 @@ struct shifts{
   static constexpr  uint32_t  chrgv  =  3;
   static constexpr  uint32_t  index  =  4;
   static constexpr  uint32_t  phi    = 11;
-  static constexpr  uint32_t  eta    = 21;
-  static constexpr  uint32_t  rsv    = 30;
+  //static constexpr  uint32_t  eta    = 21; --hack for now --tj -- only store etaext
+  static constexpr  uint32_t  ptuncon = 21;
+  static constexpr  uint32_t  impact = 30;
 };
 
 struct header_shifts{
