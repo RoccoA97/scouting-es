@@ -98,6 +98,9 @@ public:
   bool getEnableElasticProcessor() const {
     return (true ? vmap.at("enable_elastic_processor") == "yes" : false);
   }
+  bool getDoZS() const {
+    return (true ? vmap.at("doZS") == "yes" : false);
+  }
 
 private:
   

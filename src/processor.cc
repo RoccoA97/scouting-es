@@ -3,10 +3,11 @@
 #include "slice.h"
 #include "log.h"
 
-StreamProcessor::StreamProcessor(size_t max_size_) : 
+StreamProcessor::StreamProcessor(size_t max_size_, bool noZS_) : 
   tbb::filter(parallel),
   max_size(max_size_),
-  nbPackets(0)
+  nbPackets(0),
+  noZS(noZS_)
 { 
   LOG(TRACE) << "Created transform filter at " << static_cast<void*>(this);
 }  
@@ -60,12 +61,12 @@ Slice* StreamProcessor::process(Slice& input, Slice& out)
       uint32_t orbit = bl->orbit[i];
       orbitmatch += (orbit==bl->orbit[0])<<i;
       uint32_t pt = (bl->mu1f[i] >> shifts::pt) & masks::pt;
-      AblocksOn[i]=(pt>0);
+      AblocksOn[i]=(pt>0 || noZS);
       if(pt>0){
 	mAcount++;
       }
       pt = (bl->mu2f[i] >> shifts::pt) & masks::pt;
-      BblocksOn[i]=(pt>0);
+      BblocksOn[i]=(pt>0 || noZS);
       if(pt>0){
 	mBcount++;
       }
