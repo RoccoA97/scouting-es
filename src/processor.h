@@ -19,7 +19,7 @@ private:
 private:
   size_t max_size;
   uint64_t nbPackets;
-  bool noZS;
+  bool doZS;
 };
 
 #endif
