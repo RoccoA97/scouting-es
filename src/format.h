@@ -14,13 +14,14 @@ struct block1{
 };
 
 struct muon{
-  uint32_t f;
-  uint32_t s;
+  uint32_t f; //first word
+  uint32_t s; //second word
+  uint32_t extra; //for intermediate marker and eta
 };
 
 struct block{
-  uint32_t orbit;
   uint32_t bx;
+  uint32_t orbit;
   muon mu[16];
 };
 

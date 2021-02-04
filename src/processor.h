@@ -3,6 +3,8 @@
 
 #include "tbb/pipeline.h"
     
+#include <iostream>
+#include <fstream>
 //reformatter
 
 class Slice;
@@ -15,7 +17,8 @@ public:
 
 private:
   Slice* process(Slice& input, Slice& out);
-
+  
+  std::ofstream myfile;
 private:
   size_t max_size;
   uint64_t nbPackets;
