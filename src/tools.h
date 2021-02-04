@@ -68,7 +68,7 @@ inline bool create_directories(std::string& path)
       int dir_len = p - last_backslash - 1;
       if (dir_len > 0) {
         *p = 0;
-        if (mkdir(tmp, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) < 0 && (errno != EEXIST)) {
+        if (mkdir(tmp, S_IRWXU | S_IRWXG | S_IRWXO) < 0 && (errno != EEXIST)) {
           return false;
         }
         *p = '/';
