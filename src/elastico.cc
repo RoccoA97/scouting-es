@@ -120,9 +120,9 @@ void ElasticProcessor::makeAppendToBulkRequest(std::ostringstream &particle_data
     uint32_t chrgv = (ms >> shifts::chrgv) & masks::chrgv;
     uint32_t index = (ms >> shifts::index) & masks::index;
     float phi = ((ms >> shifts::phi) & masks::phi)*gmt_scales::phi_scale;
-    uint32_t ieta = (ms >> shifts::eta) & masks::etav;
-    if(((mf >> shifts::eta) & masks::etas)!=0) ieta -= 512;
-    float eta = ieta*gmt_scales::eta_scale;
+  //  uint32_t ieta = (ms >> shifts::eta) & masks::etav;
+//    if(((mf >> shifts::eta) & masks::etas)!=0) ieta -= 512;
+   // float eta = ieta*gmt_scales::eta_scale;
 
     (void)(iso);      // TODO: Unused variable
     (void)(chrgv);    // TODO: Unused variable
@@ -132,7 +132,7 @@ void ElasticProcessor::makeAppendToBulkRequest(std::ostringstream &particle_data
     particle_data << "{\"index\" : {}}\n" 
 		  << "{\"orbit\": " <<  orbit << ',' 
 		  << "\"bx\": "     <<  bx << ',' 
-		  << "\"eta\": "    <<  eta << ',' 
+//		  << "\"eta\": "    <<  eta << ',' 
 		  << "\"phi\": "    <<  phi << ',' 
 		  << "\"etap\": "   <<  etaext << ',' 
 		  << "\"phip\": "   <<  phiext << ',' 
