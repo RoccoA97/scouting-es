@@ -102,12 +102,12 @@ private:
     if (!error)
     {
       std::string_view input(data_, bytes_transferred);
-      LOG(INFO) << "Run control: Received: '" << input << '\'';
+      LOG(DEBUG) << "Run control: Received: '" << input << '\'';
 
       bytes_transferred = process_command(input, data_, max_length);
 
       std::string_view output(data_, bytes_transferred);
-      LOG(INFO) << "Run control: Sending:  '" << output << '\'';
+      LOG(DEBUG) << "Run control: Sending:  '" << output << '\'';
 
       boost::asio::async_write(socket_,
           boost::asio::buffer(data_, bytes_transferred),
