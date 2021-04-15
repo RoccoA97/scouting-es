@@ -22,6 +22,7 @@ StreamProcessor::~StreamProcessor(){
 
 Slice* StreamProcessor::process(Slice& input, Slice& out)
 {
+	//std::cout << "debug 1" << std::endl;
 	nbPackets++;
 	int bsize = sizeof(block1);
 	if((input.size()-constants::orbit_trailer_size)%bsize!=0){
@@ -36,13 +37,14 @@ Slice* StreamProcessor::process(Slice& input, Slice& out)
 
 
 	while(p!=input.end()){
+		bool brill_word = false;
 		bool endoforbit = false;
 		block1 *bl = (block1*)p;
 		int mAcount = 0;
 		int mBcount = 0;
 		uint32_t bxmatch=0;
 		uint32_t orbitmatch=0;
-
+		uint32_t brill_marker = 0xFF;
 		bool AblocksOn[8];
 		bool BblocksOn[8];
 		for(unsigned int i = 0; i < 8; i++){
@@ -51,32 +53,41 @@ Slice* StreamProcessor::process(Slice& input, Slice& out)
 				endoforbit = true;
 				break;
 			}
+			bool brill_enabled = 0;
+
+			if(( brill_enabled) && (bl->orbit[i] == 0xFF) ||( bl->bx[i] == 0xFF) ||( bl->mu1f[i] == 0xFF) || 
+					(bl->mu1s[i] == 0xFF) ||( bl->mu2f[i] == 0xFF) ||( bl->mu2s[i] == 0xFF)){
+				brill_word = true;
+			}
+
+			//	std::cout << bl->orbit[i] << std::endl;
+			/*			if (bl->orbit[i] > 258745337){
+						std::cout << bl->orbit[i] << std::endl;
+						brill_word = true;			
+						std::cout << "orbit " << bl->orbit[i] << std::endl;
+						std::cout << "bx " << bl->bx[i] << std::endl;
+						}
+						*/
 			uint32_t bx = (bl->bx[i] >> shifts::bx) & masks::bx;
 			uint32_t interm = (bl->bx[i] >> shifts::interm) & masks::interm;
 			uint32_t orbit = bl->orbit[i];
-		//	std::cout << bx << "," << orbit << "," << interm << std::endl;
-//		std::cout << std::hex << bl->mu1f[i] << std::endl;	
-/*			bl->mu1f[i] |= interm == constants::intermediate_marker ?
-				(constants::intermediate & masks::interm)<<shifts::interm :
-				(constants::final        & masks::interm)<<shifts::interm;
-			bl->mu2f[i] |= interm == constants::intermediate_marker ?
-				(constants::intermediate & masks::interm)<<shifts::interm :
-				(constants::final        & masks::interm)<<shifts::interm;
-*/
+
 			bxmatch += (bx==((bl->bx[0] >> shifts::bx) & masks::bx))<<i;
 			orbitmatch += (orbit==bl->orbit[0])<<i; 
 			uint32_t pt = (bl->mu1f[i] >> shifts::pt) & masks::pt;
 			uint32_t etae = (bl->mu1f[i] >> shifts::etaext) & masks::eta;
-//			std::cout << bx << "," << orbit << "," << interm << "," << etae << std::endl;
-			
-			AblocksOn[i]=(pt>0 || (doZS==0));
-			if(pt>0 || (doZS==0)){
+			//			std::cout << bx << "," << orbit << "," << interm << "," << etae << std::endl;
+
+			AblocksOn[i]=((pt>0) || (doZS==0) || (brill_word));
+			if((pt>0) || (doZS==0) || (brill_word)){
 				mAcount++;
+				//std::cout << "mAcount +" << std::endl;
 			}
 			pt = (bl->mu2f[i] >> shifts::pt) & masks::pt;
-			BblocksOn[i]=(pt>0 || (doZS==0));
-			if(pt>0 || (doZS==0)){
+			BblocksOn[i]=((pt>0) || (doZS==0) ||( brill_word));
+			if((pt>0) || (doZS==0) || (brill_word)){
 				mBcount++;
+				//std::cout << "mBcount +" << std::endl;
 			}
 		}
 		if(endoforbit) continue;
@@ -99,17 +110,27 @@ Slice* StreamProcessor::process(Slice& input, Slice& out)
 				memcpy(q,(char*)&bl->mu1f[i],4); q+=4;
 				memcpy(q,(char*)&bl->mu1s[i],4); q+=4;
 				//memcpy(q,(char*)&(bl->bx[i] &= ~0x1),4); q+=4; //set bit 0 to 0 for first muon
-				memcpy(q,(char*)&(bl->bx[i]),4); q+=4; //set bit 0 to 0 for first muon
+				if(brill_word == true){
+					memcpy(q,&brill_marker,4); q+=4;
+				}	else {
+					memcpy(q,(char*)&(bl->bx[i] &= ~0x1),4); q+=4; //set bit 0 to 0 for first muon
+				}
 			}
 		}
+
 		for(unsigned int i = 0; i < 8; i++){
 			if(BblocksOn[i]){
 				memcpy(q,(char*)&bl->mu2f[i],4); q+=4;
 				memcpy(q,(char*)&bl->mu2s[i],4); q+=4;
 				//memcpy(q,(char*)&(bl->bx[i] |= 0x1),4); q+=4; //set bit 0 to 1 for second muon
-				memcpy(q,(char*)&(bl->bx[i]),4); q+=4; //set bit 0 to 1 for second muon
+				if(brill_word == true){
+					memcpy(q,&brill_marker,4); q+=4; 
+				}	else{
+					memcpy(q,(char*)&(bl->bx[i] |= 0x1),4); q+=4; //set bit 0 to 1 for second muon
+				}							
 			}
 		}
+
 		p+=sizeof(block1);
 
 	}
