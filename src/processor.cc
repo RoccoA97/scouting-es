@@ -110,6 +110,7 @@ Slice* StreamProcessor::process(Slice& input, Slice& out)
 				memcpy(q,(char*)&bl->mu1f[i],4); q+=4;
 				memcpy(q,(char*)&bl->mu1s[i],4); q+=4;
 				//memcpy(q,(char*)&(bl->bx[i] &= ~0x1),4); q+=4; //set bit 0 to 0 for first muon
+		// next creating mu.extra which is a copy of bl->bx with a change to the first bit		
 				if(brill_word == true){
 					memcpy(q,&brill_marker,4); q+=4;
 				}	else {
@@ -123,7 +124,8 @@ Slice* StreamProcessor::process(Slice& input, Slice& out)
 				memcpy(q,(char*)&bl->mu2f[i],4); q+=4;
 				memcpy(q,(char*)&bl->mu2s[i],4); q+=4;
 				//memcpy(q,(char*)&(bl->bx[i] |= 0x1),4); q+=4; //set bit 0 to 1 for second muon
-				if(brill_word == true){
+		// next creating mu.extra which is a copy of bl->bx with a change to the first bit		
+		if(brill_word == true){
 					memcpy(q,&brill_marker,4); q+=4; 
 				}	else{
 					memcpy(q,(char*)&(bl->bx[i] |= 0x1),4); q+=4; //set bit 0 to 1 for second muon
