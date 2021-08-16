@@ -10,7 +10,7 @@
 class config{
 public:
   
-  enum class InputType { WZDMA, DMA, FILEDMA, FILE };
+  enum class InputType { WZDMA, DMA, FILEDMA, MICRONDAQ, FILE };
 
   config(std::string filename);
 
@@ -26,6 +26,9 @@ public:
     }
     if (input == "filedma") {
       return InputType::FILEDMA;
+    }    
+    if (input == "micronDAQ") {
+      return InputType::MICRONDAQ;
     }    
     if (input == "file") {
       return InputType::FILE;

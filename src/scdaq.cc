@@ -18,6 +18,7 @@
 #include "InputFilter.h"
 #include "FileDmaInputFilter.h"
 #include "WZDmaInputFilter.h"
+#include "micronDAQ.h"
 #include "dma_input.h"
 #include "file_input.h"
 #include "processor.h"
@@ -28,6 +29,7 @@
 #include "controls.h"
 #include "config.h"
 #include "log.h"
+#include "micronDAQ.h"
 
 using namespace std;
 
@@ -70,9 +72,14 @@ int run_pipeline( int nbThreads, ctrl& control, config& conf )
       input_filter = std::make_shared<FileDmaInputFilter>( conf.getInputFile(), MAX_BYTES_PER_INPUT_SLICE, TOTAL_SLICES, control );
 
   } else if (input == config::InputType::WZDMA ) {
-      // Create WZ DMA reader
+      // create wz dma reader
       input_filter = std::make_shared<WZDmaInputFilter>( MAX_BYTES_PER_INPUT_SLICE, TOTAL_SLICES, control );
-
+  
+  } else if (input == config::InputType::MICRONDAQ ) {
+      // create micronDAQ reader
+      //input_filter = std::make_shared<micronDAQ>();
+      throw std::runtime_error("input type micronDAQ is a work in progress");
+	
   } else {
     throw std::invalid_argument("Configuration error: Unknown input type was specified");
   }
