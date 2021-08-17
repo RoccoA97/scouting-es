@@ -14,12 +14,13 @@
 #include <cassert>
 class micronDAQ : public InputFilter {
 	public:
+  		micronDAQ( size_t, size_t , ctrl& );
 		micronDAQ();
 		virtual ~micronDAQ();
 
 		int pad_for_16bytes(int);
 		void print128(FILE*, void*, int);
-		int runMicronDAQ(int, char**);
+		int runMicronDAQ();
 	private:
 
 	protected:
