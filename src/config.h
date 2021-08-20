@@ -67,7 +67,12 @@ public:
     return boost::lexical_cast<uint32_t>(v.c_str());
   }
 
-  const std::string& getOutputFilenameBase() const 
+  const std::string& getBitFileName() const 
+  {
+    return vmap.at("bitFileName");
+  }
+ 
+   const std::string& getOutputFilenameBase() const 
   {
     return vmap.at("output_filename_base");
   }
@@ -77,6 +82,10 @@ public:
   }
   bool getOutputForceWrite() const {
     return (true ? vmap.at("output_force_write") == "yes" : false);
+  }
+  
+  bool getLoadBitFile() const {
+    return (true ? vmap.at("loadBitFile") == "yes" : false);
   }
 
   uint32_t getNumThreads() const {

@@ -11,17 +11,28 @@
 #include <memory>
 #include <InputFilter.h>
 #include <WZDmaInputFilter.h>
+#include <config.h>
 #include <cassert>
 class micronDAQ : public InputFilter {
 	public:
-  		micronDAQ( size_t, size_t , ctrl& );
+  		micronDAQ( size_t, size_t , ctrl&, config& );
 		micronDAQ();
 		virtual ~micronDAQ();
 
 		int pad_for_16bytes(int);
 		void print128(FILE*, void*, int);
-		int runMicronDAQ();
+		int runMicronDAQ(PicoDrv*);
+		const bool getLoadBitFile();
+		const std::string getBitFileName();
+		const size_t getPacketBufferSize();
+		PicoDrv* getPicoDrv();
 	private:
+        const std::string bitFileName;
+        const bool loadBitFile;
+        const size_t packetBufferSize_;
+	PicoDrv* pico_;
+	int stream1_, stream2_;
+	void setPicoDrv(PicoDrv*);
 
 	protected:
 		ssize_t readInput(char **buffer, size_t bufferSize); // Override

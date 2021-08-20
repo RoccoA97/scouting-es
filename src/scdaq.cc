@@ -77,7 +77,7 @@ int run_pipeline( int nbThreads, ctrl& control, config& conf )
   
   } else if (input == config::InputType::MICRONDAQ ) {
       // create micronDAQ reader
-      input_filter = std::make_shared<micronDAQ>(MAX_BYTES_PER_INPUT_SLICE, TOTAL_SLICES, control) ;
+      input_filter = std::make_shared<micronDAQ>(MAX_BYTES_PER_INPUT_SLICE, TOTAL_SLICES, control, conf) ;
 //      throw std::runtime_error("input type micronDAQ is a work in progress");
 	
   } else {
