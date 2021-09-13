@@ -19,6 +19,20 @@ int micronDAQ::pad_for_16bytes(int len) {
 	return pad_len;
 }
 
+// print <count> 256-bit numbers from buf
+void micronDAQ::print256(FILE *f, void *buf, int count)
+{
+	uint32_t	*u32p = (uint32_t*) buf;
+
+	for (int i=0; i < count; ++i){
+	//	fprintf(f, "0x%08x_%08x_%08x_%08x_%08x_%08x_%08x_%08x\n", u32p[4*i+7], u32p[4*i+6], u32p[4*i+5],u32p[4*i+4], u32p[4*i+3], u32p[4*i+2], u32p[4*i+1], u32p[4*i]);
+	unsigned int j = i+1;
+	unsigned int k = i+2;
+
+	fprintf(f, "0x%08x_%08x_%08x_%08x_%08x_%08x_%08x_%08x\n", u32p[4*i+7], u32p[4*i+6], u32p[4*i+5],u32p[4*j+4], u32p[4*j+3], u32p[4*j+2], u32p[4*j+1], u32p[4*k]);
+}
+}
+
 // print <count> 128-bit numbers from buf
 void micronDAQ::print128(FILE *f, void *buf, int count)
 {
@@ -39,12 +53,12 @@ const std::string micronDAQ::getBitFileName(){
 	return bitFileName;
 }
 
-int micronDAQ::runMicronDAQ(PicoDrv *pico)
+int micronDAQ::runMicronDAQ(PicoDrv *pico, char **ibuf)
 {
 	int         err, i, j, stream1, stream2;
-	uint32_t    *rbuf, *wbuf, u32, addr;
+	uint32_t    *rbuf2, *rbuf, *wbuf, u32, addr;
 	size_t	size;
-	char        ibuf[getPacketBufferSize()];
+//	char        ibuf[getPacketBufferSize()];
 	//char        ibuf[1048576];
 	//PicoDrv     *pico;
 	int size_c = getBitFileName().length();
@@ -89,12 +103,13 @@ int micronDAQ::runMicronDAQ(PicoDrv *pico)
 	size = pad_for_16bytes(size);
 
 	if (malloc) {
-		err = posix_memalign((void**)&wbuf, 16, size);
+	/*	err = posix_memalign((void**)&wbuf, 16, size);
 		if (wbuf == NULL || err) {
 			fprintf(stderr, "%s: posix_memalign could not allocate array of %zd bytes for write buffer\n", "bitfile", size);
 			exit(-1);
-		}
+		}*/
 		err = posix_memalign((void**)&rbuf, 16, size);
+		err = posix_memalign((void**)&rbuf2, 16, size);
 		if (rbuf == NULL || err) {
 			fprintf(stderr, "%s: posix_memalign could not allocate array of %zd bytes for read buffer\n", "bitfile", size);
 			exit(-1);
@@ -128,7 +143,7 @@ int micronDAQ::runMicronDAQ(PicoDrv *pico)
 	// All we have done thus far (after the call to WriteStream) is to clear out a buffer.
 	// However, by calling GetBytesAvailable, we will see that the FPGA has already processed some of that 
 	// data and placed it into an output stream.
-	i = pico->GetBytesAvailable(stream1, true /* reading */);
+	//i = pico->GetBytesAvailable(stream1_, true /* reading */);
 	//j = pico->GetBytesAvailable(stream2, true /* reading */);
 	/*	if (i < 0){
 		fprintf(stderr, "%s: GetBytesAvailable error: %s\n", "bitfile", PicoErrors_FullError(i, ibuf, sizeof(ibuf)));
@@ -139,7 +154,7 @@ int micronDAQ::runMicronDAQ(PicoDrv *pico)
 		exit(-1);
 		}
 		*/
-	printf("%d Bytes are available to read from the FPGA: stream 1 .\n", i);
+	//printf("%d Bytes are available to read from the FPGA: stream 1 .\n", i);
 	//printf("%d Bytes are available to read from the FPGA: stream 2 .\n", j);
 
 	// Since the StreamLoopback firmware echoes 1 piece of data back to the software for every piece of data
@@ -153,11 +168,12 @@ int micronDAQ::runMicronDAQ(PicoDrv *pico)
 	//size=pad_for_16bytes(pico->GetBytesAvailable(stream1, true)) - 16;
 
 	memset(rbuf, 0, sizeof(rbuf));
-	printf("Reading stream 1 %zd B\n", size);
+	//memset(rbuf2, 0, sizeof(rbuf2));
+	//printf("Reading stream 1 %zd B\n", i);
 	//	while(1){
-	err = pico->ReadStream(stream1, rbuf, size);
+	err = pico->ReadStream(stream1_, rbuf, size);
 	if (err < 0) {
-		fprintf(stderr, "%s: ReadStream error: %s\n", "bitfile", PicoErrors_FullError(err, ibuf, sizeof(ibuf)));
+		//fprintf(stderr, "%s: ReadStream error: %s\n", "bitfile", PicoErrors_FullError(err, **ibuf, getPacketBufferSize()));
 		exit(-1);
 	}
 
@@ -173,14 +189,22 @@ int micronDAQ::runMicronDAQ(PicoDrv *pico)
 	// 512 bytes for the user.
 	// In this sample, it makes the most sense to look at this read data 16B at a time, so we print out 
 	// 16B chunks
-	printf("Data received back from FPGA:\n");
-	print128(stdout, rbuf, getPacketBufferSize()/16);
+	//printf("Data received back from FPGA:\n");
+	print256(stdout, rbuf, getPacketBufferSize()/32);
 	//std::cout << ibuf << std::endl;
 	//	}
+	std::cout << "debug1" << std::endl;
+	uint32_t	*u32p = (uint32_t*) rbuf;
 
+        for (int i=0; i < ((getPacketBufferSize()/32)+2); ++i){
+        //      fprintf(f, "0x%08x_%08x_%08x_%08x_%08x_%08x_%08x_%08x\n", u32p[4*i+7], u32p[4*i+6], u32p[4*i+5],u32p[4*i+4], u32p[4*i+3], u32p[4*i+2], u32p[4*i+1], u32p[4*i]);
+                unsigned int j = i+1;
+                unsigned int k = i+2;
+  //std::cout << u32p[4*i+7] << std::endl;      
+		**ibuf << u32p[4*i+7] << u32p[4*i+6] << u32p[4*i+5] << u32p[4*j+4] << u32p[4*j+3] << u32p[4*j+2] << u32p[4*j+1] << u32p[4*k];    
+}
 	
 
-	printf("All tests successful!\n");
 
 	//free(wbuf);
 	//free(rbuf);
@@ -191,7 +215,8 @@ int micronDAQ::runMicronDAQ(PicoDrv *pico)
 
 
 micronDAQ::micronDAQ( size_t packetBufferSize, size_t nbPacketBuffers, ctrl& control, config& conf ) :
-	InputFilter( packetBufferSize, nbPacketBuffers, control ), bitFileName (conf.getBitFileName()), loadBitFile (conf.getLoadBitFile()), packetBufferSize_ (packetBufferSize) 
+	InputFilter( packetBufferSize, nbPacketBuffers, control ), bitFileName (conf.getBitFileName()), loadBitFile (conf.getLoadBitFile()), 
+packetBufferSize_ (packetBufferSize) 
 {
 	// Initialize the DMA subsystem
 	/*	if ( wz_init( &dma_ ) < 0 ) {
@@ -221,22 +246,14 @@ micronDAQ::micronDAQ( size_t packetBufferSize, size_t nbPacketBuffers, ctrl& con
 	}
 	printf("Opening streams to and from the FPGA\n");
 	stream1_ = pico->CreateStream(1);
-	stream2_ = pico->CreateStream(2);
+//	stream2_ = pico->CreateStream(2);
 	if (stream1_ < 0) {
 		// All functions in the Pico API return an error code.  If that code is < 0, then you should use
 		// the PicoErrors_FullError function to decode the error message.
-	//	fprintf(stderr, "%s: CreateStream error: %s\n", "bitfile", PicoErrors_FullError(stream1, ibuf, sizeof(ibuf)));
+		fprintf(stderr, "%s: CreateStream error: %s\n", "bitfile", PicoErrors_FullError(stream1_, 0, getPacketBufferSize()));
 		//    fprintf(stderr, "%s: CreateStream error: %s\n", argv[0], PicoErrors_FullError(stream2, ibuf, sizeof(ibuf)));
 		exit(-1);
 	}
-	if (stream2_ < 0) {
-		// All functions in the Pico API return an error code.  If that code is < 0, then you should use
-		// the PicoErrors_FullError function to decode the error message.
-	//	fprintf(stderr, "%s: CreateStream error: %s\n", "bitfile", PicoErrors_FullError(stream2, ibuf, sizeof(ibuf)));
-		//    fprintf(stderr, "%s: CreateStream error: %s\n", argv[0], PicoErrors_FullError(stream2, ibuf, sizeof(ibuf)));
-		exit(-1);
-	}
-	
 	
 	setPicoDrv(pico);
 
@@ -261,7 +278,7 @@ micronDAQ::~micronDAQ() {
 	// streams are automatically closed when the PicoDrv object is destroyed, or on program termination, but
 	//  we can also close a stream manually.
 	pico_->CloseStream(stream1_);
-	pico_->CloseStream(stream2_);
+	//pico_->CloseStream(stream2_);
 //	LOG(TRACE) << "Closed pico streams";
 //	LOG(TRACE) << "Destroyed micronDAQ input filter";
 }
@@ -289,21 +306,19 @@ ssize_t micronDAQ::readInput(char **buffer, size_t bufferSize)
 {
 	// We need at least 1MB buffer
 	//	assert( bufferSize >= 1024*1024 );
-	runMicronDAQ(getPicoDrv());
+	runMicronDAQ(getPicoDrv(), buffer);
 	return getPacketBufferSize();
 	//return WZDmaInputFilter::read_packet( buffer, bufferSize );
-	//temporary hack
-	//return 1;
 }
 
 
 // Notifi the DMA that packet was processed
 void micronDAQ::readComplete(char *buffer) {
-	/*	(void)(buffer);
+		(void)(buffer);
 
 	// Free the DMA buffer
-	if ( wz_read_complete( &dma_ ) < 0 ) {
-	throw std::system_error(errno, std::system_category(), "Cannot complete WZ DMA read");
-	}
-	*/
+//	if ( wz_read_complete( &dma_ ) < 0 ) {
+//	throw std::system_error(errno, std::system_category(), "Cannot complete WZ DMA read");
+//	}
+	
 }

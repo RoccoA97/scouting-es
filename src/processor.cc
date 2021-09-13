@@ -76,18 +76,18 @@ Slice* StreamProcessor::process(Slice& input, Slice& out)
 			orbitmatch += (orbit==bl->orbit[0])<<i; 
 			uint32_t pt = (bl->mu1f[i] >> shifts::pt) & masks::pt;
 			uint32_t etae = (bl->mu1f[i] >> shifts::etaext) & masks::eta;
-			//			std::cout << bx << "," << orbit << "," << interm << "," << etae << std::endl;
+						std::cout << bx << "," << orbit << "," << interm << "," << etae << std::endl;
 
 			AblocksOn[i]=((pt>0) || (doZS==0) || (brill_word));
 			if((pt>0) || (doZS==0) || (brill_word)){
 				mAcount++;
-				//std::cout << "mAcount +" << std::endl;
+				std::cout << "mAcount +" << std::endl;
 			}
 			pt = (bl->mu2f[i] >> shifts::pt) & masks::pt;
 			BblocksOn[i]=((pt>0) || (doZS==0) ||( brill_word));
 			if((pt>0) || (doZS==0) || (brill_word)){
 				mBcount++;
-				//std::cout << "mBcount +" << std::endl;
+				std::cout << "mBcount +" << std::endl;
 			}
 		}
 		if(endoforbit) continue;
