@@ -7,14 +7,12 @@
 # - if you need to pass flags to the linker, set LDFLAGS rather
 #   than alter the ${TARGET}: ${OBJECTS} rule
 # - to see make's built-in rules use make -p
+
 # target executable name
 TARGET = scdaq
-CXXFLAGS = -std=c++11 -Wall -Wextra -g -rdynamic -O3 -Wno-multichar -DLINUX -DPOSIX -I. -I${PICOBASE}/software/include/linux -I${PICOBASE}/software/include -fmessage-length=0 -fdiagnostics-show-option -fms-extensions -Wno-write-strings -DOSNAME="Linux" 
-#-o micronDAQ micronDAQ.h ${PICOBASE}/software/source/GString.cpp ${PICOBASE}/software/source/pico_drv.cpp ${PICOBASE}/software/source/pico_errors.cpp ${PICOBASE}/software/source/linux/linux.cpp ${PICOBASE}/software/source/pico_drv_linux.cpp
-#USER_SOURCES = micronDAQ.cc
-#include $(PICOBASE)/software/Makefile.common
+
 # source files
-SOURCES = micronDAQ.cc config.cc dma_input.cc elastico.cc FileDmaInputFilter.cc file_input.cc  InputFilter.cc output.cc  processor.cc  scdaq.cc  session.cc  slice.cc WZDmaInputFilter.cc
+SOURCES = config.cc dma_input.cc elastico.cc FileDmaInputFilter.cc file_input.cc  InputFilter.cc output.cc  processor.cc  scdaq.cc  session.cc  slice.cc WZDmaInputFilter.cc
 C_SOURCES = wz_dma.c
 
 # work out names of object files from sources
@@ -25,13 +23,13 @@ OBJECTS += $(C_SOURCES:.c=.o)
 # appropriate rules; CXXFLAGS gets passed as part of command
 # invocation for both compilation (where -c is needed) and linking
 # (where it's not.)
-#CXXFLAGS = -std=c++11 -Wall -Wextra -O0 -g -rdynamic
+CXXFLAGS = -std=c++11 -Wall -Wextra -O0 -g -rdynamic
 #CXXFLAGS = -std=c++11 -Wall -Wextra -g -rdynamic
 
 CFLAGS = $(CXXFLAGS)
 LDFLAGS = -ltbb -lboost_thread -lcurl
 
-CPPFLAGS = -I. -Iwzdma -I${PICOBASE}/software/include -I${PICOBASE}/software/include/linux -I${PICOBASE}/software/source -DLINUX -DPOSIX
+CPPFLAGS = -I. -Iwzdma
 
 # default target (to build all)
 all: ${TARGET}
@@ -59,8 +57,7 @@ ${TARGET}: ${OBJECTS}
 
 #test2.o : product.h test2.h
 
-scdaq.o:	file_input.h processor.h elastico.h output.h format.h server.h controls.h config.h session.h log.h 
-micronDAQ.o: micronDAQ.h ${PICOBASE}/software/source/GString.cpp ${PICOBASE}/software/include/pico_drv.h ${PICOBASE}/software/include/pico_errors.h ${PICOBASE}/software/include/linux/linux.h ${PICOBASE}/software/include/pico_drv_linux.h
+scdaq.o:	file_input.h processor.h elastico.h output.h format.h server.h controls.h config.h session.h log.h
 config.o:	config.h log.h
 dma_input.o:	dma_input.h slice.h
 elastico.o:	elastico.h format.h slice.h controls.h log.h
