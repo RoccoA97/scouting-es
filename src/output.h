@@ -13,7 +13,7 @@ class OutputStream: public tbb::filter {
 
 
 public:
-  OutputStream( const char* output_file_base, ctrl& c );
+  OutputStream( const char* output_file_base, ctrl& c, std::string system_name_ );
   void* operator()( void* item ) /*override*/;
 
 private:
@@ -29,6 +29,7 @@ private:
   FILE *current_file;
   uint32_t current_run_number;
   std::string journal_name;
+  std::string system_name;
 };
 
 #endif
