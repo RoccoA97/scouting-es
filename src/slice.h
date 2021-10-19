@@ -29,6 +29,7 @@ public:
   static void shutDown();
   static Slice *getAllocated();
   static void giveAllocated(Slice *);
+  Slice* clone() const { return new Slice(*this); }
 
   //! Free a Slice object 
   void free() {
