@@ -30,7 +30,7 @@ Slice* StreamProcessor::process(Slice& input, Slice& out)
 	
 	if(systemName =="DMX"){
         memcpy(q,p,input.size());
-	out.set_end(input.begin() + input.size());
+	out.set_end(out.begin() + input.size());
 	out.set_counts(1);
 	return &out;}
 	
