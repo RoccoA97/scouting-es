@@ -165,7 +165,7 @@ ssize_t WZDmaInputFilter::readInput(char **buffer, size_t bufferSize)
 }
 
 
-// Notifi the DMA that packet was processed
+// Notify the DMA that packet was processed
 void WZDmaInputFilter::readComplete(char *buffer) {
   (void)(buffer);
 
