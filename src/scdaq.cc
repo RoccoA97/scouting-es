@@ -18,7 +18,7 @@
 #include "InputFilter.h"
 #include "FileDmaInputFilter.h"
 #include "WZDmaInputFilter.h"
-#include "dma_input.h"
+#include "DmaInputFilter.h"
 #include "file_input.h"
 #include "processor.h"
 #include "elastico.h"
@@ -58,12 +58,11 @@ int run_pipeline( int nbThreads, ctrl& control, config& conf )
       TOTAL_SLICES = conf.getNumInputBuffers();
       
       //input_filter = std::make_shared<FileInputFilter>( conf.getInputFile(), MAX_BYTES_PER_INPUT_SLICE, TOTAL_SLICES );
-      throw std::runtime_error("input type FILE is temporarily not supported");
+      throw std::runtime_error("input type FILE is not supported");
 
   } else if (input == config::InputType::DMA) {
       // Create DMA reader
-      //input_filter = std::make_shared<DmaInputFilter>( conf.getDmaDevice(), MAX_BYTES_PER_INPUT_SLICE, TOTAL_SLICES );
-      throw std::runtime_error("input type DMA is temporarily not supported");
+      input_filter = std::make_shared<DmaInputFilter>( conf.getDmaDevice(), MAX_BYTES_PER_INPUT_SLICE, TOTAL_SLICES, control );
 
   } else if (input == config::InputType::FILEDMA) {
       // Create FILE DMA reader
