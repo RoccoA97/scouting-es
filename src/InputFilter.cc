@@ -30,7 +30,7 @@ InputFilter::~InputFilter() {
 }
 
 
-void InputFilter::printStats(std::ostream& out)
+void InputFilter::printStats(std::ostream& out, ssize_t lastBytesRead)
 {
      // Calculate DMA bandwidth
     tbb::tick_count now = tbb::tick_count::now();
@@ -56,7 +56,8 @@ void InputFilter::printStats(std::ostream& out)
 
     out 
       << "#" << nbReads_ << ": Reading " << std::fixed << std::setprecision(1) << bwd << " MB/sec, " 
-      << nbReadsDiff << " packet(s) min/avg/max " << minBytesRead_ <<  '/' << avgBytesRead << '/' << maxBytesRead_;
+      << nbReadsDiff << " packet(s) min/avg/max " << minBytesRead_ <<  '/' << avgBytesRead << '/' << maxBytesRead_
+      << " last " << lastBytesRead;
       
 	  // Restore formatting
 	  out.copyfmt(state);
@@ -151,7 +152,7 @@ void* InputFilter::operator()(void*) {
   // Print some statistics
   if (control_.packets_per_report && (nbReads_ % control_.packets_per_report == 0)) {
     std::ostringstream log;
-    printStats( log );
+    printStats( log, bytesRead );
     // HACK: This function is not supposed to be called from here
     dumpPacketTrailer( nextSlice_->begin(), bytesRead, log );
     LOG(INFO) << log.str();
