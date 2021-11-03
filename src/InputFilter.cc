@@ -24,7 +24,6 @@ InputFilter::InputFilter(size_t packetBufferSize, size_t nbPacketBuffers, ctrl& 
 
 InputFilter::~InputFilter() {
   LOG(TRACE) << "Destroy input filter and delete at " << static_cast<void*>(nextSlice_);
-
   Slice::giveAllocated(nextSlice_);
   LOG(DEBUG) << "Input operator performed " << nbReads_ << " read";
 }
@@ -156,7 +155,6 @@ void* InputFilter::operator()(void*) {
     dumpPacketTrailer( nextSlice_->begin(), bytesRead, log );
     LOG(INFO) << log.str();
   }
-
   // Have more data to process.
   Slice* thisSlice = nextSlice_;
   nextSlice_ = Slice::getAllocated();

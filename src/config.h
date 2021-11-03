@@ -51,6 +51,9 @@ public:
     std::string v = vmap.at("packets_per_report");
     return boost::lexical_cast<uint32_t>(v.c_str()); 
   } 
+  const std::string& getSystemName() const {
+    return vmap.at("system_name");
+  }
   const std::string& getInputFile() const {
     return vmap.at("input_file");
   }
