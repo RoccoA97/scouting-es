@@ -19,7 +19,6 @@
 #include "FileDmaInputFilter.h"
 #include "WZDmaInputFilter.h"
 #include "DmaInputFilter.h"
-#include "file_input.h"
 #include "processor.h"
 #include "elastico.h"
 #include "output.h"
@@ -30,11 +29,6 @@
 #include "log.h"
 
 using namespace std;
-
-
-
-
-
 
 
 bool silent = false;
@@ -51,15 +45,7 @@ int run_pipeline( int nbThreads, ctrl& control, config& conf )
   // Create the pipeline
   tbb::pipeline pipeline;
 
-  if (input == config::InputType::FILE) {
-      // Create file-reading writing stage and add it to the pipeline
-      //MAX_BYTES_PER_INPUT_SLICE = 192*conf.getBlocksPerInputBuffer();
-      //TOTAL_SLICES = conf.getNumInputBuffers();
-      
-      //input_filter = std::make_shared<FileInputFilter>( conf.getInputFile(), MAX_BYTES_PER_INPUT_SLICE, TOTAL_SLICES );
-      throw std::runtime_error("input type FILE is not supported");
-
-  } else if (input == config::InputType::DMA) {
+  if (input == config::InputType::DMA) {
       // Create DMA reader
       input_filter = std::make_shared<DmaInputFilter>( conf.getDmaDevice(), packetBufferSize, nbPacketBuffers, control );
 
@@ -116,7 +102,6 @@ int run_pipeline( int nbThreads, ctrl& control, config& conf )
 
   return 1;
 }
-
 
 
 int main( int argc, char* argv[] ) {
