@@ -42,11 +42,10 @@ bool silent = false;
 int run_pipeline( int nbThreads, ctrl& control, config& conf )
 {
   config::InputType input = conf.getInput();
+  size_t packetBufferSize = conf.getDmaPacketBufferSize();
+  size_t nbPacketBuffers = conf.getNumberOfDmaPacketBuffers();
 
-  size_t MAX_BYTES_PER_INPUT_SLICE = conf.getDmaPacketBufferSize();
-  size_t TOTAL_SLICES = conf.getNumberOfDmaPacketBuffers();
-
-  // Create empty input reader, will assing later when we know what is the data source 
+  // Create empty input reader, will assign later when we know what is the data source
   std::shared_ptr<InputFilter> input_filter;
 
   // Create the pipeline
@@ -54,23 +53,23 @@ int run_pipeline( int nbThreads, ctrl& control, config& conf )
 
   if (input == config::InputType::FILE) {
       // Create file-reading writing stage and add it to the pipeline
-      MAX_BYTES_PER_INPUT_SLICE = 192*conf.getBlocksPerInputBuffer();
-      TOTAL_SLICES = conf.getNumInputBuffers();
+      //MAX_BYTES_PER_INPUT_SLICE = 192*conf.getBlocksPerInputBuffer();
+      //TOTAL_SLICES = conf.getNumInputBuffers();
       
       //input_filter = std::make_shared<FileInputFilter>( conf.getInputFile(), MAX_BYTES_PER_INPUT_SLICE, TOTAL_SLICES );
       throw std::runtime_error("input type FILE is not supported");
 
   } else if (input == config::InputType::DMA) {
       // Create DMA reader
-      input_filter = std::make_shared<DmaInputFilter>( conf.getDmaDevice(), MAX_BYTES_PER_INPUT_SLICE, TOTAL_SLICES, control );
+      input_filter = std::make_shared<DmaInputFilter>( conf.getDmaDevice(), packetBufferSize, nbPacketBuffers, control );
 
   } else if (input == config::InputType::FILEDMA) {
       // Create FILE DMA reader
-      input_filter = std::make_shared<FileDmaInputFilter>( conf.getInputFile(), MAX_BYTES_PER_INPUT_SLICE, TOTAL_SLICES, control );
+      input_filter = std::make_shared<FileDmaInputFilter>( conf.getInputFile(), packetBufferSize, nbPacketBuffers, control );
 
   } else if (input == config::InputType::WZDMA ) {
       // Create WZ DMA reader
-      input_filter = std::make_shared<WZDmaInputFilter>( MAX_BYTES_PER_INPUT_SLICE, TOTAL_SLICES, control );
+      input_filter = std::make_shared<WZDmaInputFilter>( packetBufferSize, nbPacketBuffers, control );
 
   } else {
     throw std::invalid_argument("Configuration error: Unknown input type was specified");
@@ -79,13 +78,9 @@ int run_pipeline( int nbThreads, ctrl& control, config& conf )
   // Add input reader to a pipeline
   pipeline.add_filter( *input_filter );
 
-  LOG(INFO) << "Configuration translated into:";
-  LOG(INFO) << "  MAX_BYTES_PER_INPUT_SLICE: " << MAX_BYTES_PER_INPUT_SLICE;
-  LOG(INFO) << "  TOTAL_SLICES: " << TOTAL_SLICES;
-
   // Create reformatter and add it to the pipeline
   // TODO: Created here so we are not subject of scoping, fix later...
-  StreamProcessor stream_processor(MAX_BYTES_PER_INPUT_SLICE, conf.getDoZS()); 
+  StreamProcessor stream_processor(packetBufferSize, conf.getDoZS()); 
   if ( conf.getEnableStreamProcessor() ) {
     pipeline.add_filter( stream_processor );
   }
@@ -93,7 +88,7 @@ int run_pipeline( int nbThreads, ctrl& control, config& conf )
   // Create elastic populator (if requested)
   std::string url = conf.getElasticUrl();
   // TODO: Created here so we are not subject of scoping, fix later...
-  ElasticProcessor elastic_processor(MAX_BYTES_PER_INPUT_SLICE,
+  ElasticProcessor elastic_processor(packetBufferSize,
               &control,
               url,
               conf.getPtCut(),
@@ -142,6 +137,12 @@ int main( int argc, char* argv[] ) {
     control.max_file_size = conf.getOutputMaxFileSize();//in Bytes
     control.packets_per_report = conf.getPacketsPerReport();
     control.output_force_write = conf.getOutputForceWrite();
+
+    // Firmware needs at least 1MB buffer for DMA
+    if (conf.getDmaPacketBufferSize() < 1024*1024) {
+      LOG(ERROR) << "dma_packet_buffer_size must be at least 1048576 bytes (1MB), but " << conf.getDmaPacketBufferSize() << " bytes was given. Check the configuration file.";
+      return 1;
+    }
 
     boost::asio::io_service io_service;
     server s(io_service, conf.getPortNumber(), control);

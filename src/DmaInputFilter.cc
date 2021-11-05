@@ -61,7 +61,6 @@ static inline ssize_t read_axi_packet_to_buffer(int fd, char *buffer, uint64_t s
 ssize_t DmaInputFilter::readPacketFromDMA(char **buffer, size_t bufferSize)
 {
   // Read from DMA
-  // We need at least 1MB buffer
 
   ssize_t bytesRead = 0;
   int skip = 0;
@@ -94,15 +93,6 @@ ssize_t DmaInputFilter::readPacketFromDMA(char **buffer, size_t bufferSize)
     break;
   }
 
-  // This should not happen
-  if (bytesRead > (ssize_t)bufferSize ){
-    std::ostringstream os;
-    os  << "Iteration: " << nbReads()
-        << "  ERROR: DMA read returned " << bytesRead 
-        << " > buffer size " << bufferSize;
-    throw std::runtime_error( os.str() );
-  }
-
   return bytesRead;
 }
 
@@ -125,8 +115,5 @@ void DmaInputFilter::print(std::ostream& out) const
 // Read a packet from DMA
 ssize_t DmaInputFilter::readInput(char **buffer, size_t bufferSize)
 {
-  // We need at least 1MB buffer
-  assert( bufferSize >= 1024*1024 );
-
   return readPacketFromDMA( buffer, bufferSize );
 }
