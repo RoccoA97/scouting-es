@@ -12,7 +12,7 @@
 TARGET = scdaq
 
 # source files
-SOURCES = config.cc dma_input.cc elastico.cc FileDmaInputFilter.cc file_input.cc  InputFilter.cc output.cc  processor.cc  scdaq.cc  session.cc  slice.cc WZDmaInputFilter.cc
+SOURCES = config.cc DmaInputFilter.cc elastico.cc FileDmaInputFilter.cc file_input.cc  InputFilter.cc output.cc  processor.cc  scdaq.cc  session.cc  slice.cc WZDmaInputFilter.cc
 C_SOURCES = wz_dma.c
 
 # work out names of object files from sources
@@ -59,7 +59,7 @@ ${TARGET}: ${OBJECTS}
 
 scdaq.o:	file_input.h processor.h elastico.h output.h format.h server.h controls.h config.h session.h log.h
 config.o:	config.h log.h
-dma_input.o:	dma_input.h slice.h
+DmaInputFilter.o:	DmaInputFilter.h slice.h
 elastico.o:	elastico.h format.h slice.h controls.h log.h
 file_dma_input.o:	file_dma_input.h
 FileDmaInputFilter.o:	FileDmaInputFilter.h InputFilter.h log.h
