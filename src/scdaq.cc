@@ -14,10 +14,10 @@
 #include <boost/asio.hpp>
 #include <boost/thread.hpp>
 
-
 #include "InputFilter.h"
 #include "FileDmaInputFilter.h"
 #include "WZDmaInputFilter.h"
+#include "micronDAQ.h"
 #include "DmaInputFilter.h"
 #include "processor.h"
 #include "elastico.h"
