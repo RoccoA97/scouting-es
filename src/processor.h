@@ -11,7 +11,7 @@ class Slice;
 
 class StreamProcessor: public tbb::filter {
 public:
-  StreamProcessor(size_t, bool);
+  StreamProcessor(size_t, bool, std::string);
   void* operator()( void* item )/*override*/;
   ~StreamProcessor();
 
@@ -23,6 +23,7 @@ private:
   size_t max_size;
   uint64_t nbPackets;
   bool doZS;
+  std::string systemName;
 };
 
 #endif
