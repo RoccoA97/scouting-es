@@ -45,19 +45,20 @@ Slice* StreamProcessor::process(Slice& input, Slice& out)
 
 	while(p!=input.end()){
 	
-		unsigned int j = 0;
-		for (unsigned int j = 0; j < 6; j++){
-		block1 *bl_first = (block1*)p + j*8;
-		if((bl_first->orbit[0] == 0) || ((bl_first->bx[0] >> shifts::bx) & masks::bx > 3600))
+		//unsigned int j = 0;
+		//for (unsigned int j = 0; j < 6; j++){
+		//block1 *bl_first = (block1*)p + j*8;
+	/*	if((bl_first->orbit[0] == 0) || ((bl_first->bx[0] >> shifts::bx) & masks::bx > 3600))
 		{
 			j++;
 			std::cout << "found misalignment by " << j << std::endl;
 		}
-		}
+		}*/
 
 		bool brill_word = false;
 		bool endoforbit = false;
-		block1 *bl = (block1*)p + j*8;
+		block1 *bl = (block1*)p;
+		//block1 *bl = (block1*)p + j*8;
 		int mAcount = 0;
 		int mBcount = 0;
 		uint32_t bxmatch=0;
@@ -69,7 +70,7 @@ Slice* StreamProcessor::process(Slice& input, Slice& out)
 			if(bl->orbit[i]==constants::deadbeef){
 				p += constants::orbit_trailer_size;
 				endoforbit = true;
-std::cout << "endoforbit occured" << std::endl;	
+//std::cout << "endoforbit occured" << std::endl;	
 			break;
 			}
 			bool brill_enabled = 0;
