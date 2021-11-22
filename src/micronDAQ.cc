@@ -90,16 +90,17 @@ int micronDAQ::runMicronDAQ(PicoDrv *pico, char **ibuf)
 	// to next 16Byte multiple
 	//size = 1048576 * sizeof(uint32_t);
 	//size = 16384 * sizeof(uint32_t);
-	size = getPacketBufferSize() * sizeof(uint32_t);
-	size = pad_for_16bytes(size);
-	//std::cout << size << std::endl;
+	//size = getPacketBufferSize() * sizeof(uint32_t);
+	size = getPacketBufferSize();
+	//size = pad_for_16bytes(size);
+	//std::cout << sf (rbuf == NULL || err) {ize << std::endl;
 	if (malloc) {
 		/*	err = posix_memalign((void**)&wbuf, 16, size);
 			if (wbuf == NULL || err) {
 			fprintf(stderr, "%s: posix_memalign could not allocate array of %zd bytes for write buffer\n", "bitfile", size);
 			exit(-1);
 			}*/
-		err = posix_memalign((void**)&rbuf, 16, size);
+		err = posix_memalign((void**)&rbuf, 32, size);
 	//	err = posix_memalign((void**)&rbuf2, 16, size);
 		if (rbuf == NULL || err) {
 			fprintf(stderr, "%s: posix_memalign could not allocate array of %zd bytes for read buffer\n", "bitfile", size);
@@ -145,24 +146,15 @@ int micronDAQ::runMicronDAQ(PicoDrv *pico, char **ibuf)
 		exit(-1);
 		}
 		*/
-	//printf("%d Bytes are available to read from the FPGA: stream 1 .\n", i);
-	//printf("%d Bytes are available to read from the FPGA: stream 2 .\n", j);
 
-	// Since the StreamLoopback firmware echoes 1 piece of data back to the software for every piece of data
-	// that the software writes to it, we know that we can eventually read exactly the amount of data that
-	// was written to the FPGA.
 
 	// Here is where we actually call ReadStream
 	// This reads "size" number of bytes of data from the output stream specified by our stream handle (e.g. 'stream') 
 	// into our host buffer (rbuf)
 	// This call will block until it is able to read the entire "size" Bytes of data.
 	//size=pad_for_16bytes(pico->GetBytesAvailable(stream1, true)) - 16;
-
-	//memset(ibuf, 0, sizeof(ibuf));
-	//memset(rbuf2, 0, sizeof(rbuf2));
-	//printf("Reading stream 1 %zd B\n", i);
-	//	while(1){
-	err = pico->ReadStream(stream1_, rbuf, size -32);
+	std::cout << "new pico stream call" << std::endl;
+	err = pico->ReadStream(stream1_, rbuf, size);
 	if (err < 0) {
 		//fprintf(stderr, "%s: ReadStream error: %s\n", "bitfile", PicoErrors_FullError(err, **ibuf, getPacketBufferSize()));
 		exit(-1);
@@ -172,12 +164,12 @@ int micronDAQ::runMicronDAQ(PicoDrv *pico, char **ibuf)
 //	print256(stdout, rbuf, (getPacketBufferSize()/32));
 	uint32_t	*u32p = (uint32_t*) rbuf;
 
-	for (unsigned int i=0; i < ((getPacketBufferSize()/16)); ++i){
+	for (unsigned int i=0; i < (getPacketBufferSize()/16); ++i){
 		//      fprintf(f, "0x%08x_%08x_%08x_%08x_%08x_%08x_%08x_%08x\n", u32p[4*i+7], u32p[4*i+6], u32p[4*i+5],u32p[4*i+4], u32p[4*i+3], u32p[4*i+2], u32p[4*i+1], u32p[4*i]);
 		//std::cout << u32p[4*i+7] << std::endl;      
 		//uint32_t arr[8] = {u32p[4*i], u32p[4*i+1], u32p[4*i+2], u32p[4*i+3], u32p[4*i+4], u32p[4*i+5], u32p[4*i+6], u32p[4*i+7]}; 
 		//uint32_t arr[8] = {u32p[4*k], u32p[4*k+1], u32p[4*k+2], u32p[4*k+3], u32p[4*k+4], u32p[4*k+5], u32p[4*k+6], u32p[4*k+7]}; 
-		uint32_t arr[4] = {u32p[4*i+3], u32p[4*i+2], u32p[4*i+1], u32p[4*i]}; 
+		uint32_t arr[4] = {u32p[4*i], u32p[4*i+1], u32p[4*i+2], u32p[4*i+3]}; 
 		for (unsigned int word = 0; word < 4; ++word){
 			char *bytepointer = reinterpret_cast<char*>(&arr[word]);
 			for(int byte = 0; byte < 4; byte++)
@@ -185,23 +177,9 @@ int micronDAQ::runMicronDAQ(PicoDrv *pico, char **ibuf)
 				memset(*ibuf + 4*word + 16*i + byte, static_cast<int>(bytepointer[byte]), 1);
 			};
 		};
-		//std::cout << std::endl;
-
-		//		**ibuf << u32p[4*i+7] << u32p[4*i+6] << u32p[4*i+5] << u32p[4*j+4] << u32p[4*j+3] << u32p[4*j+2] << u32p[4*j+1] << u32p[4*k];    
 	};
-	//std::cout << "new buffer printing now" << std::endl;	
-	//std::cout << std::endl;	
 	//print256(stdout, *ibuf, getPacketBufferSize()/16);
 
-//*ibuf = (uint32_t*) rbuf;
-/*	for (unsigned int i=0; i < (getPacketBufferSize()/32); ++i){
-			char *bytepointer = reinterpret_cast<char*>(&u32p[4*i]);
-                        for(int byte = 0; byte < 4; byte++){
-	memset(*ibuf + 4*i + byte, static_cast<int>(bytepointer[byte]), 1);
-	}
-}*/
-	//print256(stdout, *ibuf, getPacketBufferSize()/32);
-//free(wbuf);
 	free(rbuf);
 	return 1;
 }
