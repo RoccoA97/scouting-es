@@ -164,21 +164,24 @@ int micronDAQ::runMicronDAQ(PicoDrv *pico, char **ibuf)
 //	print256(stdout, rbuf, (getPacketBufferSize()/32));
 	uint32_t	*u32p = (uint32_t*) rbuf;
 
-	for (unsigned int i=0; i < (getPacketBufferSize()/16); ++i){
-		//      fprintf(f, "0x%08x_%08x_%08x_%08x_%08x_%08x_%08x_%08x\n", u32p[4*i+7], u32p[4*i+6], u32p[4*i+5],u32p[4*i+4], u32p[4*i+3], u32p[4*i+2], u32p[4*i+1], u32p[4*i]);
-		//std::cout << u32p[4*i+7] << std::endl;      
-		//uint32_t arr[8] = {u32p[4*i], u32p[4*i+1], u32p[4*i+2], u32p[4*i+3], u32p[4*i+4], u32p[4*i+5], u32p[4*i+6], u32p[4*i+7]}; 
-		//uint32_t arr[8] = {u32p[4*k], u32p[4*k+1], u32p[4*k+2], u32p[4*k+3], u32p[4*k+4], u32p[4*k+5], u32p[4*k+6], u32p[4*k+7]}; 
-		uint32_t arr[4] = {u32p[4*i], u32p[4*i+1], u32p[4*i+2], u32p[4*i+3]}; 
-		for (unsigned int word = 0; word < 4; ++word){
-			char *bytepointer = reinterpret_cast<char*>(&arr[word]);
-			for(int byte = 0; byte < 4; byte++)
-			{
-				memset(*ibuf + 4*word + 16*i + byte, static_cast<int>(bytepointer[byte]), 1);
-			};
-		};
-	};
+	// for (unsigned int i=0; i < (getPacketBufferSize()/16); ++i){
+	// 	//      fprintf(f, "0x%08x_%08x_%08x_%08x_%08x_%08x_%08x_%08x\n", u32p[4*i+7], u32p[4*i+6], u32p[4*i+5],u32p[4*i+4], u32p[4*i+3], u32p[4*i+2], u32p[4*i+1], u32p[4*i]);
+	// 	//std::cout << u32p[4*i+7] << std::endl;      
+	// 	//uint32_t arr[8] = {u32p[4*i], u32p[4*i+1], u32p[4*i+2], u32p[4*i+3], u32p[4*i+4], u32p[4*i+5], u32p[4*i+6], u32p[4*i+7]}; 
+	// 	//uint32_t arr[8] = {u32p[4*k], u32p[4*k+1], u32p[4*k+2], u32p[4*k+3], u32p[4*k+4], u32p[4*k+5], u32p[4*k+6], u32p[4*k+7]}; 
+	// 	uint32_t arr[4] = {u32p[4*i], u32p[4*i+1], u32p[4*i+2], u32p[4*i+3]}; 
+	// 	for (unsigned int word = 0; word < 4; ++word){
+	// 		char *bytepointer = reinterpret_cast<char*>(&arr[word]);
+	// 		for(int byte = 0; byte < 4; byte++)
+	// 		{
+	// 			memset(*ibuf + 4*word + 16*i + byte, static_cast<int>(bytepointer[byte]), 1);
+	// 		};
+	// 	};
+	// };
 	//print256(stdout, *ibuf, getPacketBufferSize()/16);
+
+	// Quick hack to test if we can bypass the buffer reshuffle... 
+	memcpy(*ibuf, rbuf, size);
 
 	free(rbuf);
 	return 1;
