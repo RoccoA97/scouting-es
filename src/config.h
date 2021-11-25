@@ -27,7 +27,7 @@ public:
     if (input == "filedma") {
       return InputType::FILEDMA;
     }
-    if (input == "micronDAQ") {
+    if (input == "micronDMA") {
       return InputType::MICRONDAQ;
     }        
     if (input == "file") {

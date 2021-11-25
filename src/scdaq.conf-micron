@@ -3,11 +3,11 @@
 #   "dma"       for XILINX DMA driver
 #   "filedma"   for reading from file and simulating DMA
 #   "file"      for reading from file
-#   "micronDAQ" for PICO driver
+#   "micronDMA" for PICO driver
 
 #input:wzdma
 #input:filedma
-input:micronDAQ
+input:micronDMA
 
 
 ##settings for Micron board option

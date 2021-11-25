@@ -24,7 +24,6 @@ StreamProcessor::~StreamProcessor(){
 
 Slice* StreamProcessor::process(Slice& input, Slice& out)
 {
-	std::cout << "new process"  << std::endl;
 	nbPackets++;
 	char* p = input.begin();
 	char* q = out.begin();
@@ -206,7 +205,6 @@ void* StreamProcessor::operator()( void* item ){
 	Slice& input = *static_cast<Slice*>(item);
 	Slice& out = *Slice::allocate( 2*max_size);
 	process(input, out);
-	std::cout << "debug1" << std::endl;
 	Slice::giveAllocated(&input);
 	return &out;
 }
