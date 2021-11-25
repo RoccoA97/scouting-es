@@ -27,7 +27,7 @@ CXXFLAGS = -std=c++11 -Wall -Wextra -O0 -g -rdynamic
 #CXXFLAGS = -std=c++11 -Wall -Wextra -g -rdynamic
 
 CFLAGS = $(CXXFLAGS)
-LDFLAGS = -ltbb -lboost_thread -lcurl
+LDFLAGS = -ltbb -ltbbmalloc -lboost_thread -lcurl
 
 CPPFLAGS = -I. -Iwzdma
 
