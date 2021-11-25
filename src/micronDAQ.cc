@@ -153,7 +153,7 @@ int micronDAQ::runMicronDAQ(PicoDrv *pico, char **ibuf)
 	// into our host buffer (rbuf)
 	// This call will block until it is able to read the entire "size" Bytes of data.
 	//size=pad_for_16bytes(pico->GetBytesAvailable(stream1, true)) - 16;
-//	std::cout << "new pico stream call" << std::endl;
+	std::cout << "new pico stream call" << std::endl;
 	err = pico->ReadStream(stream1_, rbuf, size);
 	if (err < 0) {
 		//fprintf(stderr, "%s: ReadStream error: %s\n", "bitfile", PicoErrors_FullError(err, **ibuf, getPacketBufferSize()));
@@ -161,9 +161,28 @@ int micronDAQ::runMicronDAQ(PicoDrv *pico, char **ibuf)
 	}
 
 
+//	print256(stdout, rbuf, (getPacketBufferSize()/32));
 	uint32_t	*u32p = (uint32_t*) rbuf;
 
-	  	memcpy(*ibuf, rbuf, size);
+	// for (unsigned int i=0; i < (getPacketBufferSize()/16); ++i){
+	// 	//      fprintf(f, "0x%08x_%08x_%08x_%08x_%08x_%08x_%08x_%08x\n", u32p[4*i+7], u32p[4*i+6], u32p[4*i+5],u32p[4*i+4], u32p[4*i+3], u32p[4*i+2], u32p[4*i+1], u32p[4*i]);
+	// 	//std::cout << u32p[4*i+7] << std::endl;      
+	// 	//uint32_t arr[8] = {u32p[4*i], u32p[4*i+1], u32p[4*i+2], u32p[4*i+3], u32p[4*i+4], u32p[4*i+5], u32p[4*i+6], u32p[4*i+7]}; 
+	// 	//uint32_t arr[8] = {u32p[4*k], u32p[4*k+1], u32p[4*k+2], u32p[4*k+3], u32p[4*k+4], u32p[4*k+5], u32p[4*k+6], u32p[4*k+7]}; 
+	// 	uint32_t arr[4] = {u32p[4*i], u32p[4*i+1], u32p[4*i+2], u32p[4*i+3]}; 
+	// 	for (unsigned int word = 0; word < 4; ++word){
+	// 		char *bytepointer = reinterpret_cast<char*>(&arr[word]);
+	// 		for(int byte = 0; byte < 4; byte++)
+	// 		{
+	// 			memset(*ibuf + 4*word + 16*i + byte, static_cast<int>(bytepointer[byte]), 1);
+	// 		};
+	// 	};
+	// };
+	//print256(stdout, *ibuf, getPacketBufferSize()/16);
+
+	// Quick hack to test if we can bypass the buffer reshuffle... 
+	memcpy(*ibuf, rbuf, size);
+
 	free(rbuf);
 	return 1;
 }
@@ -214,6 +233,9 @@ micronDAQ::~micronDAQ() {
 	// streams are automatically closed when the PicoDrv object is destroyed, or on program termination, but
 	//  we can also close a stream manually.
 	pico_->CloseStream(stream1_);
+	//pico_->CloseStream(stream2_);
+	//	LOG(TRACE) << "Closed pico streams";
+	//	LOG(TRACE) << "Destroyed micronDAQ input filter";
 }
 
 
@@ -226,6 +248,11 @@ micronDAQ::~micronDAQ() {
 //Print some additional info
 void micronDAQ::print(std::ostream& out) const
 {
+	/*	out
+		<< ", DMA errors " << stats.nbDmaErrors
+		<< ", oversized " << stats.nbDmaOversizedPackets
+		<< ", resets " << stats.nbBoardResets;
+		*/
 }
 
 
@@ -236,6 +263,7 @@ ssize_t micronDAQ::readInput(char **buffer, size_t bufferSize)
 	//	assert( bufferSize >= 1024*1024 );
 	runMicronDAQ(getPicoDrv(), buffer);
 	return getPacketBufferSize();
+	//return WZDmaInputFilter::read_packet( buffer, bufferSize );
 }
 
 
@@ -243,5 +271,9 @@ ssize_t micronDAQ::readInput(char **buffer, size_t bufferSize)
 void micronDAQ::readComplete(char *buffer) {
 	(void)(buffer);
 
+	// Free the DMA buffer
+	//	if ( wz_read_complete( &dma_ ) < 0 ) {
+	//	throw std::system_error(errno, std::system_category(), "Cannot complete WZ DMA read");
+	//	}
 
 }
