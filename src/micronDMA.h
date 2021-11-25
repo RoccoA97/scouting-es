@@ -1,5 +1,5 @@
-#ifndef MICRONDAQ_H
-#define MICRONDAQ_H
+#ifndef MICRONDMA_H
+#define MICRONDMA_H
 
 #include <ctype.h>
 #include <stdlib.h>
@@ -13,11 +13,11 @@
 #include <WZDmaInputFilter.h>
 #include <config.h>
 #include <cassert>
-class micronDAQ : public InputFilter {
+class micronDMA : public InputFilter {
 	public:
-  		micronDAQ( size_t, size_t , ctrl&, config& );
-		micronDAQ();
-		virtual ~micronDAQ();
+  		micronDMA( size_t, size_t , ctrl&, config& );
+		micronDMA();
+		virtual ~micronDMA();
 
 		int pad_for_16bytes(int);
 		void print128(FILE*, void*, int);
@@ -40,7 +40,7 @@ class micronDAQ : public InputFilter {
 		void readComplete(char *buffer);  // Override
 		void print(std::ostream& out) const;  // Override
 };
-typedef std::shared_ptr<micronDAQ> micronDAQPtr;
+typedef std::shared_ptr<micronDMA> micronDMAPtr;
 
 
 #endif

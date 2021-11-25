@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <picodrv.h>
 #include <pico_errors.h>
-#include <micronDAQ.h>
+#include <micronDMA.h>
 #include <system_error>
 #include <boost/multiprecision/cpp_int.hpp>
 
@@ -15,7 +15,7 @@ using uint256_t  = boost::multiprecision::number<boost::multiprecision::cpp_int_
 
 
 // add pad bytes to next multiple of 16 bytes
-int micronDAQ::pad_for_16bytes(int len) {
+int micronDMA::pad_for_16bytes(int len) {
 	int pad_len = len;
 	if(len%16 !=0) {
 		pad_len = len + (16 - len%16); 
@@ -24,7 +24,7 @@ int micronDAQ::pad_for_16bytes(int len) {
 }
 
 // print <count> 256-bit numbers from buf
-void micronDAQ::print256(FILE *f, void *buf, int count)
+void micronDMA::print256(FILE *f, void *buf, int count)
 {
 	uint32_t	*u32p = (uint32_t*) buf;
 
@@ -36,7 +36,7 @@ void micronDAQ::print256(FILE *f, void *buf, int count)
 
 
 // print <count> 128-bit numbers from buf
-void micronDAQ::print128(FILE *f, void *buf, int count)
+void micronDMA::print128(FILE *f, void *buf, int count)
 {
 	uint32_t	*u32p = (uint32_t*) buf;
 
@@ -44,18 +44,18 @@ void micronDAQ::print128(FILE *f, void *buf, int count)
 		fprintf(f, "0x%08x_%08x_%08x_%08x\n", u32p[4*i+3], u32p[4*i+2], u32p[4*i+1], u32p[4*i]);
 }
 
-const size_t micronDAQ::getPacketBufferSize(){
+const size_t micronDMA::getPacketBufferSize(){
 	return packetBufferSize_;
 }
-const bool micronDAQ::getLoadBitFile(){
+const bool micronDMA::getLoadBitFile(){
 	return loadBitFile;
 }
 
-const std::string micronDAQ::getBitFileName(){
+const std::string micronDMA::getBitFileName(){
 	return bitFileName;
 }
 
-int micronDAQ::runMicronDAQ(PicoDrv *pico, char **ibuf)
+int micronDMA::runMicronDAQ(PicoDrv *pico, char **ibuf)
 {
 	int         err, i, j, stream1, stream2;
 	uint32_t    *rbuf, *wbuf, u32, addr;
@@ -124,7 +124,7 @@ int micronDAQ::runMicronDAQ(PicoDrv *pico, char **ibuf)
 }
 
 
-micronDAQ::micronDAQ( size_t packetBufferSize, size_t nbPacketBuffers, ctrl& control, config& conf ) :
+micronDMA::micronDMA( size_t packetBufferSize, size_t nbPacketBuffers, ctrl& control, config& conf ) :
 	InputFilter( packetBufferSize, nbPacketBuffers, control ), bitFileName (conf.getBitFileName()), loadBitFile (conf.getLoadBitFile()), 
 	packetBufferSize_ (packetBufferSize) 
 {
@@ -157,28 +157,28 @@ micronDAQ::micronDAQ( size_t packetBufferSize, size_t nbPacketBuffers, ctrl& con
 
 }
 
-void micronDAQ::setPicoDrv(PicoDrv* pico){
+void micronDMA::setPicoDrv(PicoDrv* pico){
 	pico_ = pico; 
 }
 
-PicoDrv* micronDAQ::getPicoDrv(){
+PicoDrv* micronDMA::getPicoDrv(){
 	return pico_;
 }
 
-micronDAQ::~micronDAQ() {
+micronDMA::~micronDMA() {
 	// streams are automatically closed when the PicoDrv object is destroyed, or on program termination, but
 	//  we can also close a stream manually.
 	pico_->CloseStream(stream1_);
 }
 
 //Print some additional info
-void micronDAQ::print(std::ostream& out) const
+void micronDMA::print(std::ostream& out) const
 {
 }
 
 
 // Read a packet from DMA
-ssize_t micronDAQ::readInput(char **buffer, size_t bufferSize)
+ssize_t micronDMA::readInput(char **buffer, size_t bufferSize)
 {
 	runMicronDAQ(getPicoDrv(), buffer);
 	return getPacketBufferSize();
@@ -186,7 +186,7 @@ ssize_t micronDAQ::readInput(char **buffer, size_t bufferSize)
 
 
 // Notifi the DMA that packet was processed
-void micronDAQ::readComplete(char *buffer) {
+void micronDMA::readComplete(char *buffer) {
 	(void)(buffer);
 
 }
