@@ -16,30 +16,18 @@
 
 class MicronDmaInputFilter : public InputFilter {
 	public:
-  		MicronDmaInputFilter( size_t, size_t , ctrl&, config& );
-		MicronDmaInputFilter();
+		MicronDmaInputFilter( size_t, size_t , ctrl&, config& );
 		virtual ~MicronDmaInputFilter();
-
-		int pad_for_16bytes(int);
-		void print128(FILE*, void*, int);
-		void print256(FILE*, void*, int);
-		int runMicronDAQ(PicoDrv*, char**);
-		const bool getLoadBitFile();
-		const std::string getBitFileName();
-		const size_t getPacketBufferSize();
-		PicoDrv* getPicoDrv();
-	private:
-        const std::string bitFileName;
-        const bool loadBitFile;
-        const size_t packetBufferSize_;
-	PicoDrv* pico_;
-	int stream1_, stream2_;
-	void setPicoDrv(PicoDrv*);
 
 	protected:
 		ssize_t readInput(char **buffer, size_t bufferSize); // Override
-		void readComplete(char *buffer);  // Override
 		void print(std::ostream& out) const;  // Override
+
+	private:
+		PicoDrv* pico_;
+		int stream1_;
+
+		ssize_t  runMicronDAQ(char **buffer, size_t bufferSize);
 };
 typedef std::shared_ptr<MicronDmaInputFilter> MicronDmaInputFilterPtr;
 

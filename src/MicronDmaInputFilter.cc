@@ -10,12 +10,51 @@
 #include <system_error>
 #include <boost/multiprecision/cpp_int.hpp>
 
+#include "log.h"
+
 using uint256_t  = boost::multiprecision::number<boost::multiprecision::cpp_int_backend<256,  256,  boost::multiprecision::unsigned_magnitude, boost::multiprecision::unchecked, void>, boost::multiprecision::et_off>;
 
 
+MicronDmaInputFilter::MicronDmaInputFilter( size_t packetBufferSize, size_t nbPacketBuffers, ctrl& control, config& conf ) :
+	InputFilter( packetBufferSize, nbPacketBuffers, control )
+{
+	std::string bitFileName = conf.getBitFileName();
+	bool loadBitFile = conf.getLoadBitFile();
+    int err;
+
+	// The RunBitFile function will locate a Pico card that can run the given bit file, and is not already
+	//   opened in exclusive-access mode by another program. It requests exclusive access to the Pico card
+	//   so no other programs will try to reuse the card and interfere with us.
+
+	if (loadBitFile) {
+		LOG(DEBUG) << "Loading FPGA with '" << bitFileName << "' ..."; 
+		err = RunBitFile(bitFileName.c_str(), &pico_);
+	} else {
+		err = FindPico(0x852, &pico_);
+	}
+
+	LOG(TRACE) << "Opening streams to and from the FPGA";
+	stream1_ = pico_->CreateStream(1);
+	if (stream1_ < 0) {
+		// All functions in the Pico API return an error code.  If that code is < 0, then you should use
+		// the PicoErrors_FullError function to decode the error message.
+		//fprintf(stderr, "%s: CreateStream error: %s\n", "bitfile", PicoErrors_FullError(stream1_, 0, packetBufferSize));
+
+		throw std::runtime_error( bitFileName + ": CreateStream error: " + PicoErrors_FullError(stream1_, 0, packetBufferSize) );
+	}
+	LOG(TRACE) << "Created Micron DMA input filter"; 
+}
+
+MicronDmaInputFilter::~MicronDmaInputFilter() {
+	// streams are automatically closed when the PicoDrv object is destroyed, or on program termination, but
+	//  we can also close a stream manually.
+	pico_->CloseStream(stream1_);
+	LOG(TRACE) << "Destroyed Micron DMA input filter";
+}
+
 
 // add pad bytes to next multiple of 16 bytes
-int MicronDmaInputFilter::pad_for_16bytes(int len) {
+int pad_for_16bytes(int len) {
 	int pad_len = len;
 	if(len%16 !=0) {
 		pad_len = len + (16 - len%16); 
@@ -24,7 +63,7 @@ int MicronDmaInputFilter::pad_for_16bytes(int len) {
 }
 
 // print <count> 256-bit numbers from buf
-void MicronDmaInputFilter::print256(FILE *f, void *buf, int count)
+void print256(FILE *f, void *buf, int count)
 {
 	uint32_t	*u32p = (uint32_t*) buf;
 
@@ -36,7 +75,7 @@ void MicronDmaInputFilter::print256(FILE *f, void *buf, int count)
 
 
 // print <count> 128-bit numbers from buf
-void MicronDmaInputFilter::print128(FILE *f, void *buf, int count)
+void print128(FILE *f, void *buf, int count)
 {
 	uint32_t	*u32p = (uint32_t*) buf;
 
@@ -44,23 +83,9 @@ void MicronDmaInputFilter::print128(FILE *f, void *buf, int count)
 		fprintf(f, "0x%08x_%08x_%08x_%08x\n", u32p[4*i+3], u32p[4*i+2], u32p[4*i+1], u32p[4*i]);
 }
 
-const size_t MicronDmaInputFilter::getPacketBufferSize(){
-	return packetBufferSize_;
-}
-const bool MicronDmaInputFilter::getLoadBitFile(){
-	return loadBitFile;
-}
 
-const std::string MicronDmaInputFilter::getBitFileName(){
-	return bitFileName;
-}
-
-int MicronDmaInputFilter::runMicronDAQ(PicoDrv *pico, char **ibuf)
+ssize_t MicronDmaInputFilter::runMicronDAQ(char **buffer, size_t bufferSize)
 {
-	int         err, i, j, stream1, stream2;
-	uint32_t    *rbuf, *wbuf, u32, addr;
-	size_t	size;
-
 	// Usually Pico streams come in two flavors: 4Byte wide, 16Byte wide (equivalent to 32bit, 128bit respectively)
 	// However, all calls to ReadStream and WriteStream must be 16Byte aligned (even for 4B wide streams)
 	// There is also an 'undocumented' 32Byte wide (256 bit) stream 
@@ -69,21 +94,10 @@ int MicronDmaInputFilter::runMicronDAQ(PicoDrv *pico, char **ibuf)
 	// Now allocate 32B aligned space for read and write stream buffers
 	//
 	// Similarily, the size of the call, in bytes, must also be a multiple of 16Bytes.
-	
-	size = getPacketBufferSize();
-	//One can pad for 16 Bytes with this function, but we don't want to pad so we don't use it here
-	//size = pad_for_16bytes(size);
-	if (malloc) {
-		err = posix_memalign((void**)&rbuf, 32, size);
-		if (rbuf == NULL || err) {
-			fprintf(stderr, "%s: posix_memalign could not allocate array of %zd bytes for read buffer\n", "bitfile", size);
-			exit(-1);
-		}
-	} else {
-		printf("%s: malloc failed\n", "bitfile");
-		exit(-1);
-	}
-
+	//
+	// err = posix_memalign((void**)&rbuf, 32, size);
+    //
+    // NOTE: Buffer are already preallocated and aligned to 32 bytes boundaries
 
 	// As with WriteStream, a ReadStream will block until all data is returned from the FPGA to the host.
 	//
@@ -108,85 +122,32 @@ int MicronDmaInputFilter::runMicronDAQ(PicoDrv *pico, char **ibuf)
 	// This reads "size" number of bytes of data from the output stream specified by our stream handle (e.g. 'stream') 
 	// into our host buffer (rbuf)
 	// This call will block until it is able to read the entire "size" Bytes of data.
-	err = pico->ReadStream(stream1_, rbuf, size);
+	int err = pico_->ReadStream(stream1_, *buffer, bufferSize);
 	if (err < 0) {
 		//fprintf(stderr, "%s: ReadStream error: %s\n", "bitfile", PicoErrors_FullError(err, **ibuf, getPacketBufferSize()));
-		exit(-1);
+		throw std::runtime_error( "ReadStream finished with error" );
 	}
 
-
-	uint32_t	*u32p = (uint32_t*) rbuf;
-
-	memcpy(*ibuf, rbuf, size);
-
-	free(rbuf);
-	return 1;
+	return bufferSize;
 }
 
 
-MicronDmaInputFilter::MicronDmaInputFilter( size_t packetBufferSize, size_t nbPacketBuffers, ctrl& control, config& conf ) :
-	InputFilter( packetBufferSize, nbPacketBuffers, control ), bitFileName (conf.getBitFileName()), loadBitFile (conf.getLoadBitFile()), 
-	packetBufferSize_ (packetBufferSize) 
-{
-	PicoDrv     *pico;
-	int size_c = getBitFileName().length();
-	char bitFileName_c[size_c + 1];
-	int err;
-	// The RunBitFile function will locate a Pico card that can run the given bit file, and is not already
-	//   opened in exclusive-access mode by another program. It requests exclusive access to the Pico card
-	//   so no other programs will try to reuse the card and interfere with us.
-	strcpy(bitFileName_c, getBitFileName().c_str());
-
-	const char* bitFileName_const = bitFileName_c;
-	if(getLoadBitFile()){
-		printf("Loading FPGA with '%s' ...\n", bitFileName_const);
-		err = RunBitFile(bitFileName_const, &pico);
-	} else{
-		err = FindPico(0x852, &pico);
-	}
-	printf("Opening streams to and from the FPGA\n");
-	stream1_ = pico->CreateStream(1);
-	if (stream1_ < 0) {
-		// All functions in the Pico API return an error code.  If that code is < 0, then you should use
-		// the PicoErrors_FullError function to decode the error message.
-		fprintf(stderr, "%s: CreateStream error: %s\n", "bitfile", PicoErrors_FullError(stream1_, 0, getPacketBufferSize()));
-		exit(-1);
-	}
-
-	setPicoDrv(pico);
-
-}
-
-void MicronDmaInputFilter::setPicoDrv(PicoDrv* pico){
-	pico_ = pico; 
-}
-
-PicoDrv* MicronDmaInputFilter::getPicoDrv(){
-	return pico_;
-}
-
-MicronDmaInputFilter::~MicronDmaInputFilter() {
-	// streams are automatically closed when the PicoDrv object is destroyed, or on program termination, but
-	//  we can also close a stream manually.
-	pico_->CloseStream(stream1_);
-}
+/**************************************************************************
+ * Entry points are here
+ * Overriding virtual functions
+ */
 
 //Print some additional info
 void MicronDmaInputFilter::print(std::ostream& out) const
 {
+	// out
+	// 	<< ", DMA errors " << stats.nbDmaErrors
+	// 	<< ", oversized " << stats.nbDmaOversizedPackets
+	// 	<< ", resets " << stats.nbBoardResets;
 }
-
 
 // Read a packet from DMA
 ssize_t MicronDmaInputFilter::readInput(char **buffer, size_t bufferSize)
 {
-	runMicronDAQ(getPicoDrv(), buffer);
-	return getPacketBufferSize();
-}
-
-
-// Notifi the DMA that packet was processed
-void MicronDmaInputFilter::readComplete(char *buffer) {
-	(void)(buffer);
-
+	return runMicronDAQ(buffer, bufferSize);
 }
