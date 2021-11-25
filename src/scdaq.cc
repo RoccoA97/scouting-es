@@ -60,7 +60,7 @@ int run_pipeline( int nbThreads, ctrl& control, config& conf )
       input_filter = std::make_shared<WZDmaInputFilter>( packetBufferSize, nbPacketBuffers, control );
 
   
-  } else if (input == config::InputType::MICRONDAQ ) {
+  } else if (input == config::InputType::MICRONDMA ) {
       // create micronDMA reader
       input_filter = std::make_shared<micronDMA>(packetBufferSize, nbPacketBuffers, control, conf) ;
   } else {
@@ -73,7 +73,7 @@ int run_pipeline( int nbThreads, ctrl& control, config& conf )
 
   // Create reformatter and add it to the pipeline
   // TODO: Created here so we are not subject of scoping, fix later...
-  StreamProcessor stream_processor(packetBufferSize, conf.getDoZS(), conf.getSystemName()); 
+  StreamProcessor stream_processor(packetBufferSize, conf.getDoZS(), conf.getSystemName(), conf.getInput()); 
   if ( conf.getEnableStreamProcessor() ) {
     pipeline.add_filter( stream_processor );
   }

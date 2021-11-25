@@ -5,12 +5,13 @@
 #include <iomanip>
 #include <vector>
 
-StreamProcessor::StreamProcessor(size_t max_size_, bool doZS_, std::string systemName_) : 
+StreamProcessor::StreamProcessor(size_t max_size_, bool doZS_, std::string systemName_, config::InputType inputType_) : 
 	tbb::filter(parallel),
 	max_size(max_size_),
 	nbPackets(0),
 	doZS(doZS_),
-	systemName(systemName_)
+	systemName(systemName_),
+	inputType(inputType_)
 { 
 	LOG(TRACE) << "Created transform filter at " << static_cast<void*>(this);
 	myfile.open ("example.txt");
@@ -45,57 +46,37 @@ Slice* StreamProcessor::process(Slice& input, Slice& out)
 	}
 	bool first = true;
 	bool skip = false;
-	while((p!=input.end() ) && (skip == false)){
-	
-		first = false;
-		bool allEqual = false;
+	while(p!=input.end() && (skip == false)){
 		unsigned int offset = 0;
-		//while((allEqual == false) && (first == true)){
-		while((allEqual == false) && (skip == false)){
-		if(offset > 5){skip = true; break;}
-		//if(offset > 1800){break;}
-		//		if(offset > 5){std::cout << "offset > 5, = " << offset << std::endl; }	
-			std::vector<uint32_t> words;
-	for (unsigned int j = 0; j < 8; j++){
 
-		//std::cout << "just before word "<<  std::endl;
-				uint32_t *word  = (uint32_t*)(p + 4*j + offset*32);
-				//std::cout << std::hex << "word = " << *word << std::endl;
+		//currently needed to align to orbit number frame when using MICRONDMA
+		if(inputType == config::InputType::MICRONDMA){
 
-				words.push_back(*word);	
-			}
-			if (( words.size() == 8) && (std::equal(words.begin() + 1, words.end(), words.begin())))
-			{
-				if((words.at(0) != 0) && (words.at(0) != 65537)){
-				allEqual = true;
-				//std::cout << "size = " << words.size() << std::endl;
-				//std::cout << "offset = " << offset << std::endl;
-				//std::cout << " equal found " << std::endl;
-			}
+
+				first = false;
+				bool allEqual = false;
+				while((allEqual == false) && (skip == false)){
+					if(offset > 5){skip = true; break;}
+					std::vector<uint32_t> words;
+					for (unsigned int j = 0; j < 8; j++){
+
+						uint32_t *word  = (uint32_t*)(p + 4*j + offset*32);
+
+						words.push_back(*word);	
+					}
+					if (( words.size() == 8) && (std::equal(words.begin() + 1, words.end(), words.begin())))
+					{
+						if((words.at(0) != 0) && (words.at(0) != 65537)){
+							allEqual = true;
+						}
+					}
+					if(allEqual==false){offset++;}
 				}
-				if(allEqual==false){offset++;}
 }
-		//block1 *bl = (block1*)(p) + offset*32;
-		//std::cout << "just before bl "<<  std::endl;
+
 		block1 *bl = (block1*)(p + offset*32);
-	//	std::cout << "orbit at = "<< bl->orbit[0] << std::endl;
-		/*		
-				for(unsigned int ch=1; ch<8; ch++){
-				if(bl_first->bx[ch] == 0){break;}
-				std::cout << "orbit at " << j << " = " << bl_first->bx[ch-1] << std::endl;
-
-				if(bl_first->bx[ch] != bl_first->bx[ch-1]){std::cout << std::hex << "broke from unequalorbits " << bl_first->bx[ch-1] << " and " << bl_first->bx[ch] << std::endl; break;}
-
-				if(ch == 7){offset = j; foundOffset = true; std::cout << "found offset" << std::endl;}
-
-				}
-				if(foundOffset == true){break;}
-				}
-				*/
 		bool brill_word = false;
 		bool endoforbit = false;
-		//std::cout << "offset = " << offset<< std::endl;
-		//block1 *bl = (block1*)p + offset*8;
 		int mAcount = 0;
 		int mBcount = 0;
 		uint32_t bxmatch=0;
@@ -116,23 +97,14 @@ Slice* StreamProcessor::process(Slice& input, Slice& out)
 				brill_word = true;
 			}
 
-			//	std::cout << bl->orbit[i] << std::endl;
-			/*			if (bl->orbit[i] > 258745337){
-						std::cout << bl->orbit[i] << std::endl;
-						brill_word = true;			
-						std::cout << "orbit " << bl->orbit[i] << std::endl;
-						std::cout << "bx " << bl->bx[i] << std::endl;
-						}
-						*/
 			uint32_t bx = (bl->bx[i] >> shifts::bx) & masks::bx;
 			uint32_t interm = (bl->bx[i] >> shifts::interm) & masks::interm;
 			uint32_t orbit = bl->orbit[i];
-			//	if(bx*orbit == 0){continue;}
 			bxmatch += (bx==((bl->bx[0] >> shifts::bx) & masks::bx))<<i;
 			orbitmatch += (orbit==bl->orbit[0])<<i; 
 			uint32_t pt = (bl->mu1f[i] >> shifts::pt) & masks::pt;
 			uint32_t etae = (bl->mu1f[i] >> shifts::etaext) & masks::eta;
-		//		std::cout << "bx = " <<((bl->bx[i] >> shifts::bx) & masks::bx) << ", orbit = " << bl->orbit[i] <<  std::endl;
+			//		std::cout << "bx = " <<((bl->bx[i] >> shifts::bx) & masks::bx) << ", orbit = " << bl->orbit[i] <<  std::endl;
 			//	std::cout << "bx = " << bx << "," << "orbit = " << orbit << "," << interm << "," << etae << std::endl;
 
 			AblocksOn[i]=((pt>0) || (doZS==0) || (brill_word));
@@ -149,7 +121,7 @@ Slice* StreamProcessor::process(Slice& input, Slice& out)
 		}
 		if(endoforbit) continue;
 		uint32_t bxcount = std::max(mAcount,mBcount);
-		if(bxcount == 0) {
+		if((bxcount == 0 )&& (inputType != config::InputType::MICRONDMA)) {
 			p+=bsize;
 			LOG(WARNING) << '#' << nbPackets << ": Detected a bx with zero muons, this should not happen. Packet is skipped."; 
 			continue;
@@ -189,16 +161,15 @@ Slice* StreamProcessor::process(Slice& input, Slice& out)
 				}							
 			}
 		}
-		
+
 		p+= (sizeof(block1) + offset*32);
-		//p+= (sizeof(block1));
 
-}
+	}
 
 
-out.set_end(q);
-out.set_counts(counts);
-return &out;  
+	out.set_end(q);
+	out.set_counts(counts);
+	return &out;  
 }
 
 void* StreamProcessor::operator()( void* item ){
