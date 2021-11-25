@@ -17,7 +17,7 @@
 #include "InputFilter.h"
 #include "FileDmaInputFilter.h"
 #include "WZDmaInputFilter.h"
-#include "micronDMA.h"
+#include "MicronDmaInputFilter.h"
 #include "DmaInputFilter.h"
 #include "processor.h"
 #include "elastico.h"
@@ -61,8 +61,8 @@ int run_pipeline( int nbThreads, ctrl& control, config& conf )
 
   
   } else if (input == config::InputType::MICRONDMA ) {
-      // create micronDMA reader
-      input_filter = std::make_shared<micronDMA>(packetBufferSize, nbPacketBuffers, control, conf) ;
+      // create MicronDmaInputFilter reader
+      input_filter = std::make_shared<MicronDmaInputFilter>(packetBufferSize, nbPacketBuffers, control, conf) ;
   } else {
     throw std::invalid_argument("Configuration error: Unknown input type was specified");
   }
