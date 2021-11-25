@@ -22,7 +22,6 @@ class micronDAQ : public InputFilter {
 		int pad_for_16bytes(int);
 		void print128(FILE*, void*, int);
 		void print256(FILE*, void*, int);
-		void print256Shifted(FILE*, void*, int);
 		int runMicronDAQ(PicoDrv*, char**);
 		const bool getLoadBitFile();
 		const std::string getBitFileName();
