@@ -1,18 +1,11 @@
 #ifndef MICRONDMA_INPUT_FILER_H
 #define MICRONDMA_INPUT_FILER_H
 
-#include <ctype.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
-#include <pico_drv.h>
-#include <pico_errors.h>
-#include <stdint.h>
 #include <memory>
-#include <InputFilter.h>
-#include <WZDmaInputFilter.h>
-#include <config.h>
-#include <cassert>
+
+#include "libmicron/micron_dma.h"
+#include "InputFilter.h"
+#include "config.h"
 
 class MicronDmaInputFilter : public InputFilter {
 	public:
@@ -24,10 +17,10 @@ class MicronDmaInputFilter : public InputFilter {
 		void print(std::ostream& out) const;  // Override
 
 	private:
-		PicoDrv* pico_;
+		micron_private* pico_;
 		int stream1_;
 
-		ssize_t  runMicronDAQ(char **buffer, size_t bufferSize);
+		ssize_t runMicronDAQ(char **buffer, size_t bufferSize);
 };
 typedef std::shared_ptr<MicronDmaInputFilter> MicronDmaInputFilterPtr;
 
