@@ -30,14 +30,14 @@ MicronDmaInputFilter::MicronDmaInputFilter( size_t packetBufferSize, size_t nbPa
 	}
 
 	LOG(TRACE) << "Opening streams to and from the FPGA";
-	stream1_ = micron_create_stream(pico_, 1);
+	stream2_ = micron_create_stream(pico_, 2);
 
-	if (stream1_ < 0) {
+	if (stream2_ < 0) {
 		// All functions in the Pico API return an error code.  If that code is < 0, then you should use
 		// the PicoErrors_FullError function to decode the error message.
 		//fprintf(stderr, "%s: CreateStream error: %s\n", "bitfile", PicoErrors_FullError(stream1_, 0, packetBufferSize));
 
-		throw std::runtime_error( bitFileName + ": CreateStream error: " + micron_picoerrors_fullerror(stream1_, 0, packetBufferSize) );
+		throw std::runtime_error( bitFileName + ": CreateStream error: " + micron_picoerrors_fullerror(stream2_, 0, packetBufferSize) );
 	}
 	LOG(TRACE) << "Created Micron DMA input filter"; 
 }
@@ -45,7 +45,7 @@ MicronDmaInputFilter::MicronDmaInputFilter( size_t packetBufferSize, size_t nbPa
 MicronDmaInputFilter::~MicronDmaInputFilter() {
 	// streams are automatically closed when the PicoDrv object is destroyed, or on program termination, but
 	//  we can also close a stream manually.
-	micron_close_stream(pico_, stream1_);
+	micron_close_stream(pico_, stream2_);
 	LOG(TRACE) << "Destroyed Micron DMA input filter";
 }
 
@@ -119,7 +119,7 @@ ssize_t MicronDmaInputFilter::runMicronDAQ(char **buffer, size_t bufferSize)
 	// This reads "size" number of bytes of data from the output stream specified by our stream handle (e.g. 'stream') 
 	// into our host buffer (rbuf)
 	// This call will block until it is able to read the entire "size" Bytes of data.
-	int err = micron_read_stream(pico_, stream1_, *buffer, bufferSize);
+	int err = micron_read_stream(pico_, stream2_, *buffer, bufferSize);
 	if (err < 0) {
 		//fprintf(stderr, "%s: ReadStream error: %s\n", "bitfile", PicoErrors_FullError(err, **ibuf, getPacketBufferSize()));
 		throw std::runtime_error( "ReadStream finished with error" );

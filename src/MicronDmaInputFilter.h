@@ -18,7 +18,7 @@ class MicronDmaInputFilter : public InputFilter {
 
 	private:
 		micron_private* pico_;
-		int stream1_;
+		int stream2_;
 
 		ssize_t runMicronDAQ(char **buffer, size_t bufferSize);
 };
