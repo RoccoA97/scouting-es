@@ -119,13 +119,31 @@ ssize_t MicronDmaInputFilter::runMicronDAQ(char **buffer, size_t bufferSize)
 	// This reads "size" number of bytes of data from the output stream specified by our stream handle (e.g. 'stream') 
 	// into our host buffer (rbuf)
 	// This call will block until it is able to read the entire "size" Bytes of data.
-	int err = micron_read_stream(pico_, stream2_, *buffer, bufferSize);
+	
+	uint32_t *u32p;
+	uint32_t packetSize;
+	int err;	
+
+	do{ 	
+	err = micron_read_stream(pico_, stream2_, *buffer, 32);
 	if (err < 0) {
-		//fprintf(stderr, "%s: ReadStream error: %s\n", "bitfile", PicoErrors_FullError(err, **ibuf, getPacketBufferSize()));
+		std::cout << "err1 = " << err << std::endl;
+		throw std::runtime_error( "ReadStream finished with error" );
+	}
+        u32p = (uint32_t*) ((*buffer));	
+	//std::cout << *u32p << std::endl;
+	}while( *u32p != 4276993775); // feedbeef in decimal
+
+
+        packetSize = 32*(*((uint32_t*) ((*buffer) + 8)) + 2);	
+	//std::cout << "packetSize " << packetSize << std::endl;
+	err = micron_read_stream(pico_, stream2_, *buffer, packetSize);
+	if (err < 0) {
+		std::cout << "err2 = " << err << std::endl;
 		throw std::runtime_error( "ReadStream finished with error" );
 	}
 
-	return bufferSize;
+	return (packetSize);
 }
 
 

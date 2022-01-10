@@ -174,7 +174,7 @@ Slice* StreamProcessor::process(Slice& input, Slice& out)
 
 void* StreamProcessor::operator()( void* item ){
 	Slice& input = *static_cast<Slice*>(item);
-	Slice& out = *Slice::allocate( 2*max_size);
+	Slice& out = *Slice::allocate( 3*max_size);
 	process(input, out);
 	Slice::giveAllocated(&input);
 	return &out;
