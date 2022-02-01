@@ -95,12 +95,12 @@ static inline ssize_t read_axi_packet_to_buffer_header(int fd, char *buffer, uin
     throw std::runtime_error( "read_axi_packet_to_buffer_header finished with error" );
   }
 
-  // read trailer
-  rc3 = read(fd, buffer, 32);
-  if (rc3 < 0) {
-    LOG(ERROR) << "#" << nbReads << ": DMA I/O ERROR. Failed reading packet trailer. Error = " << rc3;
-    throw std::runtime_error( "read_axi_packet_to_buffer_header finished with error" );
-  }
+  // // read trailer
+  // rc3 = read(fd, buffer, 32);
+  // if (rc3 < 0) {
+  //   LOG(ERROR) << "#" << nbReads << ": DMA I/O ERROR. Failed reading packet trailer. Error = " << rc3;
+  //   throw std::runtime_error( "read_axi_packet_to_buffer_header finished with error" );
+  // }
 
   return rc1+rc2+rc3;
 }
