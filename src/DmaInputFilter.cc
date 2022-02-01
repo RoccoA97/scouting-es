@@ -87,7 +87,7 @@ static inline ssize_t read_axi_packet_to_buffer_header(int fd, char *buffer, uin
     u32p = (uint32_t*) buffer;
 
     // debug
-    print256(buffer, 1);
+    // print256(buffer, 1);
   }
   while( *u32p != 4276993775 ); // feedbeef in decimal
 
@@ -108,7 +108,7 @@ static inline ssize_t read_axi_packet_to_buffer_header(int fd, char *buffer, uin
   }
 
   // debug
-  print256(buffer, 5);
+  // print256(buffer, 5);
 
   // // read trailer
   // rc3 = read(fd, buffer, 32);
