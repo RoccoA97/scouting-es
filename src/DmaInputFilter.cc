@@ -67,11 +67,10 @@ static inline ssize_t read_axi_packet_to_buffer_header(int fd, char *buffer, uin
 
   uint32_t *u32p;
   uint32_t packetSize;
-  int err;
 
   do{
     rc1 = read(fd, buffer, 32);
-    if (err < 0) {
+    if (rc1 < 0) {
       LOG(ERROR) << "#" << nbReads << ": DMA I/O ERROR. Failed reading header. Error = " << rc1;
       throw std::runtime_error( "read_axi_packet_to_buffer_header finished with error" );
     }
@@ -88,7 +87,7 @@ static inline ssize_t read_axi_packet_to_buffer_header(int fd, char *buffer, uin
   }
 
   rc2 = read(fd, buffer, packetSize);
-  if (err < 0) {
+  if (rc2 < 0) {
     LOG(ERROR) << "#" << nbReads << ": DMA I/O ERROR. Failed reading packet content. Error = " << rc2;
     throw std::runtime_error( "read_axi_packet_to_buffer_header finished with error" );
   }
