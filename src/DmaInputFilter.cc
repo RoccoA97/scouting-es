@@ -109,7 +109,7 @@ static inline ssize_t read_axi_packet_to_buffer_header(int fd, char *buffer, uin
   }
 
   // debug
-  print256(buffer, 5);
+  print256(buffer-32, 5);
 
   // // read trailer
   // rc3 = read(fd, buffer, 32);
