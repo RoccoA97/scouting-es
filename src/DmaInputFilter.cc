@@ -117,7 +117,7 @@ static inline ssize_t read_axi_packet_to_buffer_header(int fd, char *buffer, uin
   //   throw std::runtime_error( "read_axi_packet_to_buffer_header finished with error" );
   // }
 
-  return rc1+rc2;
+  return rc2;
 }
 
 ssize_t DmaInputFilter::readPacketFromDMA(char **buffer, size_t bufferSize)
