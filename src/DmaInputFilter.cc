@@ -61,7 +61,7 @@ static inline ssize_t read_axi_packet_to_buffer(int fd, char *buffer, uint64_t s
 // read_axi_packet_to_buffer for firmware with header
 static inline ssize_t read_axi_packet_to_buffer_header(int fd, char *buffer)
 {
-  ssize_t rc;
+  // ssize_t rc;
   ssize_t rc1, rc2;
   // uint64_t to_read = size;
 
