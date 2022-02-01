@@ -14,15 +14,15 @@
 
 
 
-DmaInputFilter::DmaInputFilter( const std::string& deviceFileName, size_t packetBufferSize, size_t nbPacketBuffers, ctrl& control ) : 
+DmaInputFilter::DmaInputFilter( const std::string& deviceFileName, size_t packetBufferSize, size_t nbPacketBuffers, ctrl& control ) :
   InputFilter( packetBufferSize, nbPacketBuffers, control )
-{ 
+{
   dma_fd = open( deviceFileName.c_str(), O_RDWR | O_NONBLOCK );
   if ( dma_fd < 0 ) {
     throw std::system_error(errno, std::system_category(), "Cannot open DMA device: " + deviceFileName);
   }
 
-  LOG(TRACE) << "Created DMA input filter"; 
+  LOG(TRACE) << "Created DMA input filter";
 }
 
 DmaInputFilter::~DmaInputFilter() {
@@ -54,8 +54,46 @@ static inline ssize_t read_axi_packet_to_buffer(int fd, char *buffer, uint64_t s
 
   if (rc <= 0) {
     return rc;
-  }	
+  }
   return rc;
+}
+
+// read_axi_packet_to_buffer for firmware with header
+static inline ssize_t read_axi_packet_to_buffer_header(int fd, char *buffer)
+{
+  ssize_t rc;
+  ssize_t rc1, rc2;
+  // uint64_t to_read = size;
+
+  uint32_t *u32p;
+  uint32_t packetSize;
+  int err;
+
+  do{
+    rc1 = read(fd, buffer, 32);
+    if (err < 0) {
+      LOG(ERROR) << "#" << nbReads() << ": DMA I/O ERROR. Failed reading header. Error = " << rc1;
+      throw std::runtime_error( "read_axi_packet_to_buffer_header finished with error" );
+    }
+    u32p = (uint32_t*) buffer;
+  }
+  while( *u32p != 4276993775 ); // feedbeef in decimal
+
+  packetSize = 32*(*((uint32_t*) buffer + 8)) + 2;
+  std::cout << "packetSize " << packetSize << std::endl;
+
+  if (packetSize > RW_MAX_SIZE) {
+    LOG(ERROR) << "#" << nbReads() << ": DMA I/O ERROR. Packet size exceeds maximum allowed.";
+    throw std::runtime_error( "read_axi_packet_to_buffer_header finished with error" );
+  }
+
+  rc2 = read(fd, buffer, packetSize);
+  if (err < 0) {
+    LOG(ERROR) << "#" << nbReads() << ": DMA I/O ERROR. Failed reading packet content. Error = " << rc2;
+    throw std::runtime_error( "read_axi_packet_to_buffer_header finished with error" );
+  }
+
+  return rc1+rc2;
 }
 
 ssize_t DmaInputFilter::readPacketFromDMA(char **buffer, size_t bufferSize)
@@ -106,7 +144,7 @@ ssize_t DmaInputFilter::readPacketFromDMA(char **buffer, size_t bufferSize)
 // Print some additional info
 void DmaInputFilter::print(std::ostream& out) const
 {
-    out 
+    out
       << ", DMA errors " << stats.nbDmaErrors
       << ", oversized " << stats.nbDmaOversizedPackets;
 }
