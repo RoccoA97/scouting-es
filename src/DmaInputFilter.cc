@@ -58,6 +58,15 @@ static inline ssize_t read_axi_packet_to_buffer(int fd, char *buffer, uint64_t s
   return rc;
 }
 
+void print256(void *buf, int count)
+{
+  uint32_t	*u32p = (uint32_t*) buf;
+
+  for (int i=0; i < count; ++i){
+    printf("0x%08x_%08x_%08x_%08x_%08x_%08x_%08x_%08x\n", u32p[8*i+7], u32p[8*i+6], u32p[8*i+5],u32p[8*i+4], u32p[8*i+3], u32p[8*i+2], u32p[8*i+1], u32p[8*i]);
+  }
+}
+
 // read_axi_packet_to_buffer for firmware with header
 static inline ssize_t read_axi_packet_to_buffer_header(int fd, char *buffer, uint64_t nbReads)
 {
@@ -76,6 +85,9 @@ static inline ssize_t read_axi_packet_to_buffer_header(int fd, char *buffer, uin
       throw std::runtime_error( "read_axi_packet_to_buffer_header finished with error" );
     }
     u32p = (uint32_t*) buffer;
+
+    // debug
+    print256(buffer, 1)
   }
   while( *u32p != 4276993775 ); // feedbeef in decimal
 
@@ -94,6 +106,9 @@ static inline ssize_t read_axi_packet_to_buffer_header(int fd, char *buffer, uin
     LOG(ERROR) << "#" << nbReads << ": DMA I/O ERROR. Failed reading packet content. Error = " << rc2;
     throw std::runtime_error( "read_axi_packet_to_buffer_header finished with error" );
   }
+
+  // debug
+  print256(buffer, 1)
 
   // // read trailer
   // rc3 = read(fd, buffer, 32);
