@@ -62,12 +62,13 @@ static inline ssize_t read_axi_packet_to_buffer(int fd, char *buffer, uint64_t s
 static inline ssize_t read_axi_packet_to_buffer_header(int fd, char *buffer, uint64_t nbReads)
 {
   // ssize_t rc;
-  ssize_t rc1, rc2;
+  ssize_t rc1, rc2, rc3;
   // uint64_t to_read = size;
 
   uint32_t *u32p;
   uint32_t packetSize;
 
+  // read 32 bytes until header is found
   do{
     rc1 = read(fd, buffer, 32);
     if (rc1 < 0) {
@@ -78,7 +79,8 @@ static inline ssize_t read_axi_packet_to_buffer_header(int fd, char *buffer, uin
   }
   while( *u32p != 4276993775 ); // feedbeef in decimal
 
-  packetSize = 32*(*((uint32_t*) (buffer + 8)) + 2);
+  // packet length from header
+  packetSize = 32*(*((uint32_t*) (buffer + 8)));
   std::cout << "packetSize " << packetSize << std::endl;
 
   if (packetSize > RW_MAX_SIZE) {
@@ -86,13 +88,21 @@ static inline ssize_t read_axi_packet_to_buffer_header(int fd, char *buffer, uin
     throw std::runtime_error( "read_axi_packet_to_buffer_header finished with error" );
   }
 
+  // read packet content
   rc2 = read(fd, buffer, packetSize);
   if (rc2 < 0) {
     LOG(ERROR) << "#" << nbReads << ": DMA I/O ERROR. Failed reading packet content. Error = " << rc2;
     throw std::runtime_error( "read_axi_packet_to_buffer_header finished with error" );
   }
 
-  return rc1+rc2;
+  // read trailer
+  rc3 = read(fd, buffer, 32);
+  if (rc3 < 0) {
+    LOG(ERROR) << "#" << nbReads << ": DMA I/O ERROR. Failed reading packet trailer. Error = " << rc3;
+    throw std::runtime_error( "read_axi_packet_to_buffer_header finished with error" );
+  }
+
+  return rc1+rc2+rc3;
 }
 
 ssize_t DmaInputFilter::readPacketFromDMA(char **buffer, size_t bufferSize)
