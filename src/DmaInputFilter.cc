@@ -93,7 +93,8 @@ static inline ssize_t read_axi_packet_to_buffer_header(int fd, char *buffer, uin
 
   // packet length from header
   packetSize = 32*(*((uint32_t*) (buffer + 8)) + 1);
-  std::cout << "packetSize " << packetSize << std::endl;
+  // debug
+  // std::cout << "packetSize " << packetSize << std::endl;
 
   if (packetSize > RW_MAX_SIZE) {
     LOG(ERROR) << "#" << nbReads << ": DMA I/O ERROR. Packet size exceeds maximum allowed.";
