@@ -144,7 +144,7 @@ void* InputFilter::operator()(void*) {
   }
 
   // Notify that we processed the given buffer
-  // readComplete(buffer);
+  readComplete(buffer);
 
   // Update some stats
   nbBytesRead_ += bytesRead;
