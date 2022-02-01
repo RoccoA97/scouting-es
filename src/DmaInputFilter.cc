@@ -1,5 +1,5 @@
 #include <cassert>
-// #include <cstdio>
+#include <cstdio>
 #include <cerrno>
 #include <system_error>
 #include <iostream>
@@ -102,7 +102,7 @@ static inline ssize_t read_axi_packet_to_buffer_header(int fd, char *buffer, uin
   }
 
   // read packet content
-  rc2 = read(fd, buffer, packetSize, 32);
+  rc2 = pread(fd, buffer, packetSize, 32);
   if (rc2 < 0) {
     LOG(ERROR) << "#" << nbReads << ": DMA I/O ERROR. Failed reading packet content. Error = " << rc2;
     throw std::runtime_error( "read_axi_packet_to_buffer_header finished with error" );
