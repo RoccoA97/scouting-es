@@ -7,7 +7,7 @@
 #include "controls.h"
 #include "log.h"
 
-InputFilter::InputFilter(size_t packetBufferSize, size_t nbPacketBuffers, ctrl& control) : 
+InputFilter::InputFilter(size_t packetBufferSize, size_t nbPacketBuffers, ctrl& control) :
     filter(serial_in_order),
     control_(control),
     nextSlice_(Slice::preAllocate( packetBufferSize, nbPacketBuffers )),
@@ -15,7 +15,7 @@ InputFilter::InputFilter(size_t packetBufferSize, size_t nbPacketBuffers, ctrl& 
     nbBytesRead_(0),
     previousNbBytesRead_(0),
     previousStartTime_( tbb::tick_count::now() )
-{ 
+{
     minBytesRead_ = SSIZE_MAX;
     maxBytesRead_ = 0;
     previousNbReads_ = 0;
@@ -58,11 +58,11 @@ void InputFilter::printStats(std::ostream& out, ssize_t lastBytesRead)
     std::ios state(nullptr);
 	  state.copyfmt(out);
 
-    out 
-      << "#" << nbReads_ << ": Reading " << std::fixed << std::setprecision(1) << bwd << " MB/sec, " 
+    out
+      << "#" << nbReads_ << ": Reading " << std::fixed << std::setprecision(1) << bwd << " MB/sec, "
       << nbReadsDiff << " packet(s) min/avg/max " << minBytesRead_ <<  '/' << avgBytesRead << '/' << maxBytesRead_
       << " last " << lastBytesRead;
-      
+
 	  // Restore formatting
 	  out.copyfmt(state);
 
@@ -71,7 +71,7 @@ void InputFilter::printStats(std::ostream& out, ssize_t lastBytesRead)
 
     // Clear statistics
     minBytesRead_ = SSIZE_MAX;
-    maxBytesRead_ = 0;     
+    maxBytesRead_ = 0;
 }
 
 
@@ -95,13 +95,13 @@ void dumpPacketTrailer(char *buffer, size_t size, std::ostream& out)
   std::ios state(nullptr);
   state.copyfmt(out);
 
-  uint64_t deadbeef = *reinterpret_cast<uint64_t *>( buffer ); 
+  uint64_t deadbeef = *reinterpret_cast<uint64_t *>( buffer );
   uint64_t autorealignCounter = *reinterpret_cast<uint64_t *>( buffer + 8 );
   uint64_t droppedOrbitCounter = *reinterpret_cast<uint64_t *>( buffer + 2*8 );
   uint64_t orbitCounter = *reinterpret_cast<uint64_t *>( buffer + 3*8 );
 
   if (deadbeef == 0xdeadbeefdeadbeef) {
-    out 
+    out
       << ", HW: autorealign " << autorealignCounter
       << " orbits " << orbitCounter
       << " dropped " <<  droppedOrbitCounter;
@@ -139,12 +139,12 @@ void* InputFilter::operator()(void*) {
 
   if (buffer != nextSlice_->begin()) {
     // If read returned a different buffer, then it didn't use our buffer and we have to copy data
-    // FIXME: It is a bit stupid to copy buffer, better would be to use zero copy approach 
+    // FIXME: It is a bit stupid to copy buffer, better would be to use zero copy approach
     memcpy( nextSlice_->begin(), buffer, bytesRead );
   }
 
   // Notify that we processed the given buffer
-  readComplete(buffer);
+  // readComplete(buffer);
 
   // Update some stats
   nbBytesRead_ += bytesRead;
@@ -165,11 +165,10 @@ void* InputFilter::operator()(void*) {
   // Have more data to process.
   Slice* thisSlice = nextSlice_;
   nextSlice_ = Slice::getAllocated();
-  
+
   // Adjust the end of this buffer
   thisSlice->set_end( thisSlice->end() + bytesRead );
-  
+
   return thisSlice;
 
 }
-
