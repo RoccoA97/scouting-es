@@ -59,7 +59,7 @@ static inline ssize_t read_axi_packet_to_buffer(int fd, char *buffer, uint64_t s
 }
 
 // read_axi_packet_to_buffer for firmware with header
-static inline ssize_t read_axi_packet_to_buffer_header(int fd, char *buffer)
+static inline ssize_t read_axi_packet_to_buffer_header(int fd, char *buffer, uint64_t nbReads)
 {
   // ssize_t rc;
   ssize_t rc1, rc2;
@@ -72,7 +72,7 @@ static inline ssize_t read_axi_packet_to_buffer_header(int fd, char *buffer)
   do{
     rc1 = read(fd, buffer, 32);
     if (err < 0) {
-      LOG(ERROR) << "#" << DmaInputFilter::nbReads() << ": DMA I/O ERROR. Failed reading header. Error = " << rc1;
+      LOG(ERROR) << "#" << nbReads << ": DMA I/O ERROR. Failed reading header. Error = " << rc1;
       throw std::runtime_error( "read_axi_packet_to_buffer_header finished with error" );
     }
     u32p = (uint32_t*) buffer;
@@ -83,13 +83,13 @@ static inline ssize_t read_axi_packet_to_buffer_header(int fd, char *buffer)
   std::cout << "packetSize " << packetSize << std::endl;
 
   if (packetSize > RW_MAX_SIZE) {
-    LOG(ERROR) << "#" << DmaInputFilter::nbReads() << ": DMA I/O ERROR. Packet size exceeds maximum allowed.";
+    LOG(ERROR) << "#" << nbReads << ": DMA I/O ERROR. Packet size exceeds maximum allowed.";
     throw std::runtime_error( "read_axi_packet_to_buffer_header finished with error" );
   }
 
   rc2 = read(fd, buffer, packetSize);
   if (err < 0) {
-    LOG(ERROR) << "#" << DmaInputFilter::nbReads() << ": DMA I/O ERROR. Failed reading packet content. Error = " << rc2;
+    LOG(ERROR) << "#" << nbReads << ": DMA I/O ERROR. Failed reading packet content. Error = " << rc2;
     throw std::runtime_error( "read_axi_packet_to_buffer_header finished with error" );
   }
 
@@ -105,7 +105,8 @@ ssize_t DmaInputFilter::readPacketFromDMA(char **buffer, size_t bufferSize)
 
   while (true) {
     // Read from DMA
-    bytesRead = read_axi_packet_to_buffer(dma_fd, *buffer, bufferSize);
+    // bytesRead = read_axi_packet_to_buffer(dma_fd, *buffer, bufferSize);
+    bytesRead = read_axi_packet_to_buffer_header(dma_fd, *buffer, nbReads());
 
     if (bytesRead < 0) {
       skip++;
