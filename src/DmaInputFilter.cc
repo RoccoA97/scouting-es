@@ -102,7 +102,8 @@ static inline ssize_t read_axi_packet_to_buffer_header(int fd, char *buffer, uin
   }
 
   // read packet content
-  rc2 = read(fd, buffer+32, packetSize);
+  // rc2 = read(fd, buffer+32, packetSize);
+  rc2 = read(fd, buffer, packetSize);
   if (rc2 < 0) {
     LOG(ERROR) << "#" << nbReads << ": DMA I/O ERROR. Failed reading packet content. Error = " << rc2;
     throw std::runtime_error( "read_axi_packet_to_buffer_header finished with error" );
@@ -118,7 +119,8 @@ static inline ssize_t read_axi_packet_to_buffer_header(int fd, char *buffer, uin
   //   throw std::runtime_error( "read_axi_packet_to_buffer_header finished with error" );
   // }
 
-  return rc1+rc2;
+  // return rc1+rc2;
+  return rc2;
 }
 
 ssize_t DmaInputFilter::readPacketFromDMA(char **buffer, size_t bufferSize)
