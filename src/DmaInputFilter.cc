@@ -92,7 +92,7 @@ static inline ssize_t read_axi_packet_to_buffer_header(int fd, char *buffer, uin
   while( *u32p != 4276993775 ); // feedbeef in decimal
 
   // packet length from header
-  packetSize = 32*(*((uint32_t*) (buffer + 8)) + 10);
+  packetSize = 32*(*((uint32_t*) (buffer + 8)) + 1);
   std::cout << "packetSize " << packetSize << std::endl;
 
   if (packetSize > RW_MAX_SIZE) {
@@ -108,7 +108,7 @@ static inline ssize_t read_axi_packet_to_buffer_header(int fd, char *buffer, uin
   }
 
   // debug
-  print256(buffer, 1);
+  print256(buffer+packetSize, 1);
 
   // // read trailer
   // rc3 = read(fd, buffer, 32);
