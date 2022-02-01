@@ -4,7 +4,6 @@
 #include <system_error>
 #include <iostream>
 #include <sstream>
-#include <unistd.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -102,14 +101,14 @@ static inline ssize_t read_axi_packet_to_buffer_header(int fd, char *buffer, uin
   }
 
   // read packet content
-  rc2 = pread(fd, buffer, packetSize, 32);
+  rc2 = read(fd, buffer+32, packetSize);
   if (rc2 < 0) {
     LOG(ERROR) << "#" << nbReads << ": DMA I/O ERROR. Failed reading packet content. Error = " << rc2;
     throw std::runtime_error( "read_axi_packet_to_buffer_header finished with error" );
   }
 
   // debug
-  print256(buffer-32, 5);
+  print256(buffer, 5);
 
   // // read trailer
   // rc3 = read(fd, buffer, 32);
@@ -118,7 +117,7 @@ static inline ssize_t read_axi_packet_to_buffer_header(int fd, char *buffer, uin
   //   throw std::runtime_error( "read_axi_packet_to_buffer_header finished with error" );
   // }
 
-  return rc2;
+  return rc1+rc2;
 }
 
 ssize_t DmaInputFilter::readPacketFromDMA(char **buffer, size_t bufferSize)
