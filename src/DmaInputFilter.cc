@@ -154,6 +154,8 @@ static inline ssize_t read_axi_packet_to_buffer_header_v2(int fd, char *buffer, 
   int i = 0;
   do{
     u32p = (uint32_t*) buffer + 32*i;
+    print256(buffer + 32*i, 1); // debug
+
     ++i;
   }
   while( *u32p != 4276993775 ); // feedbeef in decimal
