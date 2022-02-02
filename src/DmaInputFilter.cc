@@ -60,7 +60,7 @@ static inline ssize_t read_axi_packet_to_buffer(int fd, char *buffer, uint64_t s
 
 void print256(void *buf, int count)
 {
-  uint32_t	*u32p = (uint32_t*) buf;
+  uint32_t* u32p = (uint32_t*) buf;
 
   for (int i=0; i < count; ++i){
     printf("0x%08x_%08x_%08x_%08x_%08x_%08x_%08x_%08x\n", u32p[8*i+7], u32p[8*i+6], u32p[8*i+5],u32p[8*i+4], u32p[8*i+3], u32p[8*i+2], u32p[8*i+1], u32p[8*i]);
@@ -123,6 +123,55 @@ static inline ssize_t read_axi_packet_to_buffer_header(int fd, char *buffer, uin
   return rc2;
 }
 
+
+
+
+
+
+
+static inline ssize_t read_axi_packet_to_buffer_header_v2(int fd, char *buffer, uint64_t size)
+{
+  ssize_t rc;
+  uint64_t to_read = size;
+
+  if (to_read > RW_MAX_SIZE) {
+    to_read = RW_MAX_SIZE;
+  }
+
+  /* read data from file into memory buffer */
+  rc = read(fd, buffer, to_read);
+
+  if (rc <= 0) {
+    throw std::runtime_error( "read_axi_packet_to_buffer_header_v2 finished with error" );
+    return rc;
+  }
+
+
+  uint32_t* u32p;
+  uint32_t packetSize;
+
+  // read 32 bytes until header is found
+  int i = 0;
+  do{
+    rc1 = read(fd, buffer, 32);
+    u32p = (uint32_t*) buffer + 32*i;
+    ++i;
+  }
+  while( *u32p != 4276993775 ); // feedbeef in decimal
+
+  // packet length from header
+  packetSize = 32*(*((uint32_t*) (buffer + 32*(i-1) + 8)) + 1);
+
+  return 32*(i-1) + packetSize;
+}
+
+
+
+
+
+
+
+
 ssize_t DmaInputFilter::readPacketFromDMA(char **buffer, size_t bufferSize)
 {
   // Read from DMA
@@ -133,7 +182,8 @@ ssize_t DmaInputFilter::readPacketFromDMA(char **buffer, size_t bufferSize)
   while (true) {
     // Read from DMA
     // bytesRead = read_axi_packet_to_buffer(dma_fd, *buffer, bufferSize);
-    bytesRead = read_axi_packet_to_buffer_header(dma_fd, *buffer, nbReads());
+    // bytesRead = read_axi_packet_to_buffer_header(dma_fd, *buffer, nbReads());
+    bytesRead = read_axi_packet_to_buffer_header_v2(dma_fd, *buffer, nbReads());
 
     if (bytesRead < 0) {
       skip++;
