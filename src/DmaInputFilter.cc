@@ -153,7 +153,6 @@ static inline ssize_t read_axi_packet_to_buffer_header_v2(int fd, char *buffer, 
   // read 32 bytes until header is found
   int i = 0;
   do{
-    rc1 = read(fd, buffer, 32);
     u32p = (uint32_t*) buffer + 32*i;
     ++i;
   }
